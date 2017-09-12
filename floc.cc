@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <git2.h>
@@ -273,23 +274,76 @@ out:
 	git_libgit2_shutdown();
 }
 
+static void usage(void)
+{
+	std::cout << "floc [options] [arguments...]" << std::endl;
+	std::cout << "Options:" << std::endl;
+	std::cout << "  --help, -h      Print this help message" << std::endl;
+	std::cout << "  --git, -g       Run in git-mode, arguments are interpreted as git-revisions instead of filesystem paths" << std::endl;
+}
+
+enum {
+	OPTION_HELP,
+	OPTION_GIT,
+};
+
+static struct option options[] = {
+	{ "help",		no_argument,		0, OPTION_HELP           },
+	{ "git",		no_argument,		0, OPTION_GIT            },
+};
+
 int main(int argc, char **argv)
 {
+	std::vector<std::string> args;
 	bool use_git = false;
-	struct result r;
 
-	if (argc < 2)
-		return 1;
+	while (true) {
+		int c, optidx;
 
-	if (use_git)
-		git_counter(r, argv[1]);
-	else
-		fs_counter(r, argv[1]);
+		c = getopt_long(argc, argv, "hg", options, &optidx);
+		if (c == -1)
+			break;
 
-	std::cout << "Scanned " << r.files << " files" << std::endl;
-	std::cout << "Code Lines       : " << r.code << std::endl;
-	std::cout << "Comment Lines    : " << r.comment << std::endl;
-	std::cout << "Whitespace Lines : " << r.whitespace << std::endl;
+		switch (c) {
+		case OPTION_HELP:
+		case 'h':
+			usage();
+			break;
+		case OPTION_GIT:
+		case 'g':
+			use_git = true;
+			break;
+		default:
+			std::cerr << "Unknown option" << std::endl;
+			usage();
+			return 1;
+		}
+	}
+
+	while (optind < argc)
+		args.emplace_back(std::string(argv[optind++]));
+
+	if (args.size() == 0) {
+		if (use_git)
+			args.emplace_back(std::string("HEAD"));
+		else
+			args.emplace_back(std::string("."));
+	}
+
+	for (auto &a : args) {
+		struct result r;
+
+		if (use_git)
+			git_counter(r, a.c_str());
+		else
+			fs_counter(r, a.c_str());
+
+		std::cout << "Results for " << a << ":" << std::endl;
+		std::cout << "  Scanned " << r.files << " files" << std::endl;
+		std::cout << "  Code Lines       : " << r.code << std::endl;
+		std::cout << "  Comment Lines    : " << r.comment << std::endl;
+		std::cout << "  Whitespace Lines : " << r.whitespace << std::endl;
+	}
 
 	return 0;
 }
