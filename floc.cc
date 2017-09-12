@@ -16,9 +16,10 @@ struct result {
 	uint32_t code;
 	uint32_t comment;
 	uint32_t whitespace;
+	uint32_t files;
 
 	result()
-		: code(0), comment(0), whitespace(0)
+		: code(0), comment(0), whitespace(0), files(0)
 	{
 	}
 };
@@ -149,7 +150,7 @@ static bool classifile(std::string path)
 	return (ext == ".c" || ext == ".h" || ext == ".cc");
 }
 
-static uint32_t fs_counter(struct result &r, const char *path)
+static void fs_counter(struct result &r, const char *path)
 {
 	char *buffer = NULL;
 	size_t buf_size = 0;
@@ -164,7 +165,7 @@ static uint32_t fs_counter(struct result &r, const char *path)
 		if (!classifile(path))
 			continue;
 
-		files += 1;
+		r.files += 1;
 
 		auto size = fs::file_size(path);
 		if (size > buf_size) {
@@ -177,17 +178,14 @@ static uint32_t fs_counter(struct result &r, const char *path)
 	}
 
 	delete[] buffer;
-
-	return files;
 }
 
 struct git_walk_cb_data {
 	git_repository *repo;
 	struct result *r;
-	uint32_t files;
 
 	git_walk_cb_data()
-		: repo(NULL), r(NULL), files(0)
+		: repo(NULL), r(NULL)
 	{ }
 };
 
@@ -212,7 +210,7 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	if (error < 0)
 		return error;
 
-	cb_data->files += 1;
+	cb_data->r->files += 1;
 
 	buffer = static_cast<const char *>(git_blob_rawcontent(blob));
 	size   = git_blob_rawsize(blob);
@@ -224,7 +222,7 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	return 0;
 }
 
-static uint32_t git_counter(struct result &r, const char *rev)
+static void git_counter(struct result &r, const char *rev)
 {
 	struct git_walk_cb_data cb_data;
 	git_repository *repo = NULL;
@@ -273,25 +271,22 @@ out:
 
 	git_repository_free(repo);
 	git_libgit2_shutdown();
-
-	return cb_data.files;
 }
 
 int main(int argc, char **argv)
 {
 	bool use_git = false;
-	uint32_t files = 0;
 	struct result r;
 
 	if (argc < 2)
 		return 1;
 
 	if (use_git)
-		files = git_counter(r, argv[1]);
+		git_counter(r, argv[1]);
 	else
-		files = fs_counter(r, argv[1]);
+		fs_counter(r, argv[1]);
 
-	std::cout << "Scanned " << files << " files" << std::endl;
+	std::cout << "Scanned " << r.files << " files" << std::endl;
 	std::cout << "Code Lines       : " << r.code << std::endl;
 	std::cout << "Comment Lines    : " << r.comment << std::endl;
 	std::cout << "Whitespace Lines : " << r.whitespace << std::endl;
