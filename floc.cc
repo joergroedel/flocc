@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <git2.h>
 
 namespace fs = std::experimental::filesystem;
 
@@ -180,15 +181,115 @@ static uint32_t fs_counter(struct result &r, const char *path)
 	return files;
 }
 
+struct git_walk_cb_data {
+	git_repository *repo;
+	struct result *r;
+	uint32_t files;
+
+	git_walk_cb_data()
+		: repo(NULL), r(NULL), files(0)
+	{ }
+};
+
+static int git_tree_walker(const char *root, const git_tree_entry *entry, void *payload)
+{
+	struct git_walk_cb_data *cb_data = static_cast<struct git_walk_cb_data *>(payload);
+	std::string fname = git_tree_entry_name(entry);
+	const git_oid *oid = git_tree_entry_id(entry);
+	git_otype ot = git_tree_entry_type(entry);
+	const char *buffer;
+	git_blob *blob;
+	size_t size;
+	int error;
+
+	if (ot != GIT_OBJ_BLOB)
+		return 0;
+
+	if (!classifile(fname))
+		return 0;
+
+	error = git_blob_lookup(&blob, cb_data->repo, oid);
+	if (error < 0)
+		return error;
+
+	cb_data->files += 1;
+
+	buffer = static_cast<const char *>(git_blob_rawcontent(blob));
+	size   = git_blob_rawsize(blob);
+
+	count_c(*(cb_data->r), buffer, size);
+
+	git_blob_free(blob);
+
+	return 0;
+}
+
+static uint32_t git_counter(struct result &r, const char *rev)
+{
+	struct git_walk_cb_data cb_data;
+	git_repository *repo = NULL;
+	const git_oid *oid;
+	git_commit *commit;
+	git_object *head;
+	git_tree *tree;
+	int error;
+
+	git_libgit2_init();
+
+	error = git_repository_open(&repo, ".");
+	if (error < 0)
+		goto out;
+
+	error = git_revparse_single(&head, repo, rev);
+	if (error < 0)
+		goto out;
+
+	oid = git_object_id(head);
+
+	error = git_commit_lookup(&commit, repo, oid);
+	if (error < 0)
+		goto out;
+
+	error = git_commit_tree(&tree, commit);
+	if (error < 0)
+		goto out;
+
+	cb_data.repo = repo;
+	cb_data.r = &r;
+
+	error = git_tree_walk(tree, GIT_TREEWALK_PRE, git_tree_walker, &cb_data);
+	if (error < 0)
+		goto out;
+
+	git_tree_free(tree);
+	git_commit_free(commit);
+	git_object_free(head);
+
+out:
+	if (error < 0) {
+		const git_error *e = giterr_last();
+		std::cerr << "Error: " << e->message << std::endl;
+	}
+
+	git_repository_free(repo);
+	git_libgit2_shutdown();
+
+	return cb_data.files;
+}
+
 int main(int argc, char **argv)
 {
+	bool use_git = false;
 	uint32_t files = 0;
 	struct result r;
 
 	if (argc < 2)
 		return 1;
 
-	files = fs_counter(r, argv[1]);
+	if (use_git)
+		files = git_counter(r, argv[1]);
+	else
+		files = fs_counter(r, argv[1]);
 
 	std::cout << "Scanned " << files << " files" << std::endl;
 	std::cout << "Code Lines       : " << r.code << std::endl;
