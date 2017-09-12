@@ -148,17 +148,13 @@ static bool classifile(std::string path)
 	return (ext == ".c" || ext == ".h" || ext == ".cc");
 }
 
-int main(int argc, char **argv)
+static uint32_t fs_counter(struct result &r, const char *path)
 {
-	uint32_t files = 0;
-	struct result r;
 	char *buffer = NULL;
 	size_t buf_size = 0;
+	uint32_t files = 0;
 
-	if (argc < 2)
-		return 1;
-
-	for (auto &p : fs::recursive_directory_iterator(argv[1])) {
+	for (auto &p : fs::recursive_directory_iterator(path)) {
 		const auto &path = p.path();
 
 		if (!fs::is_regular_file(p))
@@ -178,6 +174,21 @@ int main(int argc, char **argv)
 		if (read_file_to_buffer(path.c_str(), buffer, size))
 			count_c(r, buffer, size);
 	}
+
+	delete[] buffer;
+
+	return files;
+}
+
+int main(int argc, char **argv)
+{
+	uint32_t files = 0;
+	struct result r;
+
+	if (argc < 2)
+		return 1;
+
+	files = fs_counter(r, argv[1]);
 
 	std::cout << "Scanned " << files << " files" << std::endl;
 	std::cout << "Code Lines       : " << r.code << std::endl;
