@@ -223,7 +223,7 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	return 0;
 }
 
-static void git_counter(struct result &r, const char *rev)
+static void git_counter(struct result &r, const char *repo_path, const char *rev)
 {
 	struct git_walk_cb_data cb_data;
 	git_repository *repo = NULL;
@@ -235,7 +235,7 @@ static void git_counter(struct result &r, const char *rev)
 
 	git_libgit2_init();
 
-	error = git_repository_open(&repo, ".");
+	error = git_repository_open(&repo, repo_path);
 	if (error < 0)
 		goto out;
 
@@ -278,29 +278,34 @@ static void usage(void)
 {
 	std::cout << "floc [options] [arguments...]" << std::endl;
 	std::cout << "Options:" << std::endl;
-	std::cout << "  --help, -h      Print this help message" << std::endl;
-	std::cout << "  --git, -g       Run in git-mode, arguments are interpreted as git-revisions instead of filesystem paths" << std::endl;
+	std::cout << "  --help, -h         Print this help message" << std::endl;
+	std::cout << "  --repo, -r <repo>  Path to git-repository to use, implies --git" << std::endl;
+	std::cout << "  --git, -g          Run in git-mode, arguments are interpreted as" << std::endl;
+	std::cout << "                     git-revisions instead of filesystem paths" << std::endl;
 }
 
 enum {
 	OPTION_HELP,
+	OPTION_REPO,
 	OPTION_GIT,
 };
 
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
+	{ "repo",		required_argument,	0, OPTION_REPO           },
 	{ "git",		no_argument,		0, OPTION_GIT            },
 };
 
 int main(int argc, char **argv)
 {
 	std::vector<std::string> args;
+	const char *repo = ".";
 	bool use_git = false;
 
 	while (true) {
 		int c, optidx;
 
-		c = getopt_long(argc, argv, "hg", options, &optidx);
+		c = getopt_long(argc, argv, "hgr:", options, &optidx);
 		if (c == -1)
 			break;
 
@@ -308,7 +313,10 @@ int main(int argc, char **argv)
 		case OPTION_HELP:
 		case 'h':
 			usage();
-			break;
+			return 0;
+		case OPTION_REPO:
+			repo = optarg;
+			/* Fall-through */
 		case OPTION_GIT:
 		case 'g':
 			use_git = true;
@@ -334,7 +342,7 @@ int main(int argc, char **argv)
 		struct result r;
 
 		if (use_git)
-			git_counter(r, a.c_str());
+			git_counter(r, repo, a.c_str());
 		else
 			fs_counter(r, a.c_str());
 
