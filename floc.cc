@@ -135,6 +135,19 @@ static bool read_file_to_buffer(const char *path, char *buffer, size_t size)
 	return size == 0;
 }
 
+static bool classifile(std::string path)
+{
+	std::string ext;
+
+	auto pos = path.find_last_of(".");
+	if (pos == std::string::npos)
+		return false;
+
+	ext = path.substr(pos);
+
+	return (ext == ".c" || ext == ".h" || ext == ".cc");
+}
+
 int main(int argc, char **argv)
 {
 	uint32_t files = 0;
@@ -147,12 +160,11 @@ int main(int argc, char **argv)
 
 	for (auto &p : fs::recursive_directory_iterator(argv[1])) {
 		const auto &path = p.path();
-		auto ext = path.extension();
 
 		if (!fs::is_regular_file(p))
 			continue;
 
-		if (!(ext == ".c" || ext == ".h" || ext == ".cc"))
+		if (!classifile(path))
 			continue;
 
 		files += 1;
