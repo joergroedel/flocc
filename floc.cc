@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cerrno>
+#include <map>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,9 +19,10 @@ struct result {
 	uint32_t comment;
 	uint32_t whitespace;
 	uint32_t files;
+	uint32_t unique_files;
 
 	result()
-		: code(0), comment(0), whitespace(0), files(0)
+		: code(0), comment(0), whitespace(0), files(0), unique_files(0)
 	{
 	}
 };
@@ -184,6 +186,7 @@ static void fs_counter(struct result &r, const char *path)
 struct git_walk_cb_data {
 	git_repository *repo;
 	struct result *r;
+	std::map<std::string, bool> seen;
 
 	git_walk_cb_data()
 		: repo(NULL), r(NULL)
@@ -198,6 +201,7 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	git_otype ot = git_tree_entry_type(entry);
 	const char *buffer;
 	git_blob *blob;
+	char sha1[41];
 	size_t size;
 	int error;
 
@@ -207,11 +211,22 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	if (!classifile(fname))
 		return 0;
 
+	cb_data->r->files += 1;
+
+	git_oid_fmt(sha1, oid);
+	sha1[40] = 0;
+	std::string hash = sha1;
+
+	auto pos = cb_data->seen.find(hash);
+	if (pos != cb_data->seen.end())
+		return 0;
+
+	cb_data->seen[hash] = true;
+	cb_data->r->unique_files += 1;
+
 	error = git_blob_lookup(&blob, cb_data->repo, oid);
 	if (error < 0)
 		return error;
-
-	cb_data->r->files += 1;
 
 	buffer = static_cast<const char *>(git_blob_rawcontent(blob));
 	size   = git_blob_rawsize(blob);
@@ -347,7 +362,7 @@ int main(int argc, char **argv)
 			fs_counter(r, a.c_str());
 
 		std::cout << "Results for " << a << ":" << std::endl;
-		std::cout << "  Scanned " << r.files << " files" << std::endl;
+		std::cout << "  Scanned " << r.unique_files << " unique files (" << r.files << " total)" << std::endl;
 		std::cout << "  Code Lines       : " << r.code << std::endl;
 		std::cout << "  Comment Lines    : " << r.comment << std::endl;
 		std::cout << "  Whitespace Lines : " << r.whitespace << std::endl;
