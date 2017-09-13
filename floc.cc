@@ -12,6 +12,8 @@
 #include <ctype.h>
 #include <git2.h>
 
+#include "md4.h"
+
 namespace fs = std::experimental::filesystem;
 
 struct result {
@@ -153,11 +155,25 @@ static bool classifile(std::string path)
 	return (ext == ".c" || ext == ".h" || ext == ".cc");
 }
 
+static std::string hash_buffer(const char *buffer, size_t size)
+{
+	char str[33];
+	struct hash h;
+
+	md4_init(&h);
+	md4_process(&h, buffer, size);
+	md4_finish(&h);
+	md4_to_string(&h, str);
+
+	return std::string(str);
+}
+
 static void fs_counter(struct result &r, const char *path)
 {
 	char *buffer = NULL;
 	size_t buf_size = 0;
 	uint32_t files = 0;
+	std::map<std::string, bool> seen;
 
 	for (auto &p : fs::recursive_directory_iterator(path)) {
 		const auto &path = p.path();
@@ -168,16 +184,24 @@ static void fs_counter(struct result &r, const char *path)
 		if (!classifile(path))
 			continue;
 
-		r.files += 1;
-
 		auto size = fs::file_size(path);
 		if (size > buf_size) {
 			delete[] buffer;
 			buffer = new char[size];
 		}
 
-		if (read_file_to_buffer(path.c_str(), buffer, size))
-			count_c(r, buffer, size);
+		if (read_file_to_buffer(path.c_str(), buffer, size)) {
+			std::string hash = hash_buffer(buffer, size);
+			auto pos = seen.find(hash);
+
+			if (pos == seen.end()) {
+				seen[hash] = true;
+				r.unique_files += 1;
+				count_c(r, buffer, size);
+			}
+
+			r.files += 1;
+		}
 	}
 
 	delete[] buffer;
