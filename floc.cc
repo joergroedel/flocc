@@ -278,6 +278,7 @@ static count_result fs_count_one(struct file_result &r,
 
 		if (pos != seen.end()) {
 			ret = count_result::duplicate;
+			r.duplicate = true;
 		} else {
 			ret = count_result::counted;
 			seen[hash] = true;
