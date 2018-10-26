@@ -497,7 +497,6 @@ int main(int argc, char **argv)
 			if (fr.type == file_type::unknown)
 				continue;
 
-			std::cout << fr.name << std::endl;
 			files += 1;
 
 			if (fr.duplicate)
