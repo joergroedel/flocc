@@ -48,6 +48,26 @@ struct file_result {
 	}
 };
 
+struct file_buffer {
+	size_t size = 0;
+	char *buffer = nullptr;
+
+	void resize_buffer(size_t new_size)
+	{
+		if (new_size <= size)
+			return;
+
+		delete [] buffer;
+		buffer = new char[new_size];
+	}
+
+	~file_buffer()
+	{
+		if (buffer != nullptr)
+			delete [] buffer;
+	}
+};
+
 using file_handler = std::function<void(struct file_result &r, const char *buffer, size_t size)>;
 using file_list    = std::list<file_result>;
 
@@ -225,7 +245,8 @@ static std::string hash_buffer(const char *buffer, size_t size)
 
 static void fs_count_one(struct file_result &r,
 			 const fs::directory_entry &p,
-			 std::map<std::string, bool> &seen)
+			 std::map<std::string, bool> &seen,
+			 file_buffer &fb)
 {
 	const auto &path = p.path();
 
@@ -238,10 +259,10 @@ static void fs_count_one(struct file_result &r,
 
 	r.type = type;
 
-	std::unique_ptr<char[]> buffer(new char[size]);
+	fb.resize_buffer(size);
 
-	if (read_file_to_buffer(path.c_str(), buffer.get(), size)) {
-		std::string hash = hash_buffer(buffer.get(), size);
+	if (read_file_to_buffer(path.c_str(), fb.buffer, size)) {
+		std::string hash = hash_buffer(fb.buffer, size);
 		auto pos = seen.find(hash);
 
 		if (pos != seen.end())
@@ -249,7 +270,7 @@ static void fs_count_one(struct file_result &r,
 		else
 			seen[hash] = true;
 
-		handler(r, buffer.get(), size);
+		handler(r, fb.buffer, size);
 	}
 }
 
@@ -268,11 +289,12 @@ static void fs_counter(file_list &fl, const char *path)
 {
 	std::map<std::string, bool> seen;
 	fs::path input = path;
+	file_buffer fb;
 
 	if (fs::is_regular_file(input)) {
 		fs::directory_entry entry(input);
 		file_result fr(input.string());
-		fs_count_one(fr, entry, seen);
+		fs_count_one(fr, entry, seen, fb);
 		fl.emplace_back(std::move(fr));
 	} else if (fs::is_directory(input)) {
 		for (auto &p : fs::recursive_directory_iterator(path)) {
@@ -280,7 +302,7 @@ static void fs_counter(file_list &fl, const char *path)
 				continue;
 
 			file_result fr(p.path());
-			fs_count_one(fr, p, seen);
+			fs_count_one(fr, p, seen, fb);
 			fl.emplace_back(std::move(fr));
 		}
 	} else {
