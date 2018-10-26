@@ -120,7 +120,6 @@ static void count_c(struct file_result &r, const char *buffer, size_t size)
 	enum state state = BEGIN;
 	size_t counter = 0;
 	char c = 0, lc;
-	size_t index;
 
 	if (size == 0)
 		return;
