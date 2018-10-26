@@ -1,7 +1,9 @@
 #include <experimental/filesystem>
+#include <functional>
 #include <iostream>
 #include <cstdint>
 #include <cerrno>
+#include <list>
 #include <map>
 
 #include <sys/types.h>
@@ -16,18 +18,73 @@
 
 namespace fs = std::experimental::filesystem;
 
-struct result {
+enum class file_type {
+	unknown,
+	c,
+	c_cpp_header,
+	cpp,
+};
+
+struct file_result {
 	uint32_t code;
 	uint32_t comment;
 	uint32_t whitespace;
-	uint32_t files;
-	uint32_t unique_files;
+	bool duplicate;
+	file_type type;
+	std::string name;
 
-	result()
-		: code(0), comment(0), whitespace(0), files(0), unique_files(0)
+	file_result(std::string n)
+		: code(0), comment(0), whitespace(0), duplicate(false),
+		  type(file_type::unknown), name(n)
 	{
 	}
 };
+
+struct result {
+	uint32_t unique_files;
+	uint32_t files;
+	std::list<file_result> file_list;
+
+	result()
+		: unique_files(0), files(0)
+	{
+	}
+};
+
+enum class count_result {
+	error,
+	counted,
+	duplicate,
+};
+
+static void update_result(result &r, count_result cr)
+{
+	switch (cr) {
+	case count_result::counted:
+		r.files += 1;
+		r.unique_files += 1;
+		break;
+	case count_result::duplicate:
+		r.files += 1;
+		break;
+	case count_result::error:
+		break;
+	}
+}
+
+using file_handler = std::function<void(struct file_result &r, const char *buffer, size_t size)>;
+
+static const char *get_file_type_cstr(file_type t)
+{
+	switch (t) {
+	case file_type::unknown:	return "Unknown";
+	case file_type::c:		return "C";
+	case file_type::c_cpp_header:	return "C/C++ Header";
+	case file_type::cpp:		return "C++";
+	}
+
+	return nullptr;
+}
 
 enum state {
 	BEGIN,
@@ -36,7 +93,7 @@ enum state {
 	MLCOMMENT,
 };
 
-static void finish_line(struct result &r, bool &code, bool &comment, size_t &counter)
+static void finish_line(struct file_result &r, bool &code, bool &comment, size_t &counter)
 {
 	if (counter == 0)
 		return;
@@ -51,7 +108,7 @@ static void finish_line(struct result &r, bool &code, bool &comment, size_t &cou
 	counter = 0;
 }
 
-static void count_c(struct result &r, const char *buffer, size_t size)
+static void count_c(struct file_result &r, const char *buffer, size_t size)
 {
 	bool code = false, comment = false;
 	enum state state = BEGIN;
@@ -142,17 +199,39 @@ static bool read_file_to_buffer(const char *path, char *buffer, size_t size)
 	return size == 0;
 }
 
-static bool classifile(std::string path)
+static file_type classifile(std::string path)
 {
 	std::string ext;
 
 	auto pos = path.find_last_of(".");
 	if (pos == std::string::npos)
-		return false;
+		return file_type::unknown;
 
 	ext = path.substr(pos);
 
-	return (ext == ".c" || ext == ".h" || ext == ".cc");
+	if (ext == ".c")
+		return file_type::c;
+	if (ext == ".h" || ext == ".hh")
+		return file_type::c_cpp_header;
+	if (ext == ".cc" || ext == ".C" || ext == ".c++")
+		return file_type::cpp;
+
+	return file_type::unknown;
+}
+
+static file_handler get_file_handler(file_type type)
+{
+	file_handler fh_default = [](struct file_result &r, const char *buffer, size_t size) {};
+
+	file_handler unknown;
+	switch (type) {
+		case file_type::c:
+		case file_type::c_cpp_header:
+		case file_type::cpp:
+			return count_c;
+		default:
+			return fh_default;
+	}
 }
 
 static std::string hash_buffer(const char *buffer, size_t size)
@@ -173,18 +252,19 @@ static void count_file(struct result &r, const char *file, char **buf)
 	const char *buffer = *buf;
 }
 
-static void fs_count_one(struct result &r, const fs::directory_entry &p,
-			 std::map<std::string, bool> &seen)
+static count_result fs_count_one(struct file_result &r,
+				 const fs::directory_entry &p,
+				 std::map<std::string, bool> &seen)
 {
 	const auto &path = p.path();
 
 	if (!fs::is_regular_file(p))
-		return;
+		return count_result::error;
 
-	if (!classifile(path))
-		return;
-
-	auto size = fs::file_size(path);
+	auto type    = classifile(path);
+	auto handler = get_file_handler(type);
+	auto size    = fs::file_size(path);
+	auto ret     = count_result::counted;
 
 	std::unique_ptr<char[]> buffer(new char[size]);
 
@@ -192,28 +272,35 @@ static void fs_count_one(struct result &r, const fs::directory_entry &p,
 		std::string hash = hash_buffer(buffer.get(), size);
 		auto pos = seen.find(hash);
 
-		if (pos == seen.end()) {
+		if (pos != seen.end()) {
+			ret = count_result::duplicate;
+		} else {
+			ret = count_result::counted;
 			seen[hash] = true;
-			r.unique_files += 1;
-			count_c(r, buffer.get(), size);
 		}
 
-		r.files += 1;
+		handler(r, buffer.get(), size);
 	}
+
+	return ret;
 }
 
-static void fs_counter(struct result &r, const char *path)
+static void fs_counter(result &r, const char *path)
 {
 	std::map<std::string, bool> seen;
 	fs::path input = path;
 
 	if (fs::is_regular_file(input)) {
 		fs::directory_entry entry(input);
-
-		fs_count_one(r, entry, seen);
+		file_result fr(input.string());
+		update_result(r, fs_count_one(fr, entry, seen));
+		r.file_list.emplace_back(std::move(fr));
 	} else if (fs::is_directory(input)) {
-		for (auto &p : fs::recursive_directory_iterator(path))
-			fs_count_one(r, p, seen);
+		for (auto &p : fs::recursive_directory_iterator(path)) {
+			file_result fr(p.path());
+			update_result(r, fs_count_one(fr, p, seen));
+			r.file_list.emplace_back(std::move(fr));
+		}
 	} else {
 		throw fs::filesystem_error("File type not supported", input, std::error_code());
 	}
@@ -235,6 +322,7 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	std::string fname = git_tree_entry_name(entry);
 	const git_oid *oid = git_tree_entry_id(entry);
 	git_otype ot = git_tree_entry_type(entry);
+	file_result fr(fname);
 	const char *buffer;
 	git_blob *blob;
 	char sha1[41];
@@ -244,10 +332,10 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	if (ot != GIT_OBJ_BLOB)
 		return 0;
 
-	if (!classifile(fname))
-		return 0;
-
 	cb_data->r->files += 1;
+
+	auto type    = classifile(fname);
+	auto handler = get_file_handler(type);
 
 	git_oid_fmt(sha1, oid);
 	sha1[40] = 0;
@@ -255,10 +343,11 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 
 	auto pos = cb_data->seen.find(hash);
 	if (pos != cb_data->seen.end())
-		return 0;
+		fr.duplicate = true;
+	else
+		cb_data->r->unique_files += 1;
 
 	cb_data->seen[hash] = true;
-	cb_data->r->unique_files += 1;
 
 	error = git_blob_lookup(&blob, cb_data->repo, oid);
 	if (error < 0)
@@ -267,7 +356,8 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	buffer = static_cast<const char *>(git_blob_rawcontent(blob));
 	size   = git_blob_rawsize(blob);
 
-	count_c(*(cb_data->r), buffer, size);
+	handler(fr, buffer, size);
+	cb_data->r->file_list.emplace_back(std::move(fr));
 
 	git_blob_free(blob);
 
@@ -305,7 +395,7 @@ static void git_counter(struct result &r, const char *repo_path, const char *rev
 		goto out;
 
 	cb_data.repo = repo;
-	cb_data.r = &r;
+	cb_data.r    = &r;
 
 	error = git_tree_walk(tree, GIT_TREEWALK_PRE, git_tree_walker, &cb_data);
 	if (error < 0)
@@ -390,18 +480,28 @@ int main(int argc, char **argv)
 	}
 
 	for (auto &a : args) {
-		struct result r;
+		uint32_t code = 0, comment = 0, whitespace = 0;
+		result r;
 
 		if (use_git)
 			git_counter(r, repo, a.c_str());
 		else
 			fs_counter(r, a.c_str());
 
+		for (auto &fr : r.file_list) {
+			if (fr.duplicate)
+				continue;
+
+			code       += fr.code;
+			comment    += fr.comment;
+			whitespace += fr.whitespace;
+		}
+
 		std::cout << "Results for " << a << ":" << std::endl;
 		std::cout << "  Scanned " << r.unique_files << " unique files (" << r.files << " total)" << std::endl;
-		std::cout << "  Code Lines       : " << r.code << std::endl;
-		std::cout << "  Comment Lines    : " << r.comment << std::endl;
-		std::cout << "  Whitespace Lines : " << r.whitespace << std::endl;
+		std::cout << "  Code Lines       : " << code << std::endl;
+		std::cout << "  Comment Lines    : " << comment << std::endl;
+		std::cout << "  Whitespace Lines : " << whitespace << std::endl;
 	}
 
 	return 0;
