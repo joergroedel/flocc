@@ -314,7 +314,7 @@ struct git_walk_cb_data {
 	std::map<std::string, bool> seen;
 
 	git_walk_cb_data()
-		: repo(NULL), r(NULL)
+		: repo(nullptr), r(nullptr)
 	{ }
 };
 
@@ -371,7 +371,7 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 static void git_counter(struct result &r, const char *repo_path, const char *rev)
 {
 	struct git_walk_cb_data cb_data;
-	git_repository *repo = NULL;
+	git_repository *repo = nullptr;
 	const git_oid *oid;
 	git_commit *commit;
 	git_object *head;
