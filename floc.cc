@@ -253,11 +253,6 @@ static std::string hash_buffer(const char *buffer, size_t size)
 	return std::string(str);
 }
 
-static void count_file(struct result &r, const char *file, char **buf)
-{
-	const char *buffer = *buf;
-}
-
 static count_result fs_count_one(struct file_result &r,
 				 const fs::directory_entry &p,
 				 std::map<std::string, bool> &seen)
