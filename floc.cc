@@ -48,39 +48,8 @@ struct file_result {
 	}
 };
 
-struct result {
-	uint32_t unique_files;
-	uint32_t files;
-	std::list<file_result> file_list;
-
-	result()
-		: unique_files(0), files(0)
-	{
-	}
-};
-
-enum class count_result {
-	error,
-	counted,
-	duplicate,
-};
-
-static void update_result(result &r, count_result cr)
-{
-	switch (cr) {
-	case count_result::counted:
-		r.files += 1;
-		r.unique_files += 1;
-		break;
-	case count_result::duplicate:
-		r.files += 1;
-		break;
-	case count_result::error:
-		break;
-	}
-}
-
 using file_handler = std::function<void(struct file_result &r, const char *buffer, size_t size)>;
+using file_list    = std::list<file_result>;
 
 static const char *get_file_type_cstr(file_type t)
 {
@@ -254,19 +223,18 @@ static std::string hash_buffer(const char *buffer, size_t size)
 	return std::string(str);
 }
 
-static count_result fs_count_one(struct file_result &r,
-				 const fs::directory_entry &p,
-				 std::map<std::string, bool> &seen)
+static void fs_count_one(struct file_result &r,
+			 const fs::directory_entry &p,
+			 std::map<std::string, bool> &seen)
 {
 	const auto &path = p.path();
 
 	if (!fs::is_regular_file(p))
-		return count_result::error;
+		return;
 
 	auto type    = classifile(path);
 	auto handler = get_file_handler(type);
 	auto size    = fs::file_size(path);
-	auto ret     = count_result::counted;
 
 	r.type = type;
 
@@ -276,21 +244,16 @@ static count_result fs_count_one(struct file_result &r,
 		std::string hash = hash_buffer(buffer.get(), size);
 		auto pos = seen.find(hash);
 
-		if (pos != seen.end()) {
-			ret = count_result::duplicate;
+		if (pos != seen.end())
 			r.duplicate = true;
-		} else {
-			ret = count_result::counted;
+		else
 			seen[hash] = true;
-		}
 
 		handler(r, buffer.get(), size);
 	}
-
-	return ret;
 }
 
-static void fs_counter(result &r, const char *path)
+static void fs_counter(file_list &fl, const char *path)
 {
 	std::map<std::string, bool> seen;
 	fs::path input = path;
@@ -298,13 +261,13 @@ static void fs_counter(result &r, const char *path)
 	if (fs::is_regular_file(input)) {
 		fs::directory_entry entry(input);
 		file_result fr(input.string());
-		update_result(r, fs_count_one(fr, entry, seen));
-		r.file_list.emplace_back(std::move(fr));
+		fs_count_one(fr, entry, seen);
+		fl.emplace_back(std::move(fr));
 	} else if (fs::is_directory(input)) {
 		for (auto &p : fs::recursive_directory_iterator(path)) {
 			file_result fr(p.path());
-			update_result(r, fs_count_one(fr, p, seen));
-			r.file_list.emplace_back(std::move(fr));
+			fs_count_one(fr, p, seen);
+			fl.emplace_back(std::move(fr));
 		}
 	} else {
 		throw fs::filesystem_error("File type not supported", input, std::error_code());
@@ -313,11 +276,11 @@ static void fs_counter(result &r, const char *path)
 
 struct git_walk_cb_data {
 	git_repository *repo;
-	struct result *r;
+	file_list *fl;
 	std::map<std::string, bool> seen;
 
 	git_walk_cb_data()
-		: repo(nullptr), r(nullptr)
+		: repo(nullptr), fl(nullptr)
 	{ }
 };
 
@@ -337,8 +300,6 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	if (ot != GIT_OBJ_BLOB)
 		return 0;
 
-	cb_data->r->files += 1;
-
 	auto type    = classifile(fname);
 	auto handler = get_file_handler(type);
 
@@ -351,8 +312,6 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	auto pos = cb_data->seen.find(hash);
 	if (pos != cb_data->seen.end())
 		fr.duplicate = true;
-	else
-		cb_data->r->unique_files += 1;
 
 	cb_data->seen[hash] = true;
 
@@ -364,14 +323,14 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 	size   = git_blob_rawsize(blob);
 
 	handler(fr, buffer, size);
-	cb_data->r->file_list.emplace_back(std::move(fr));
+	cb_data->fl->emplace_back(std::move(fr));
 
 	git_blob_free(blob);
 
 	return 0;
 }
 
-static void git_counter(struct result &r, const char *repo_path, const char *rev)
+static void git_counter(file_list &fl, const char *repo_path, const char *rev)
 {
 	struct git_walk_cb_data cb_data;
 	git_repository *repo = nullptr;
@@ -402,7 +361,7 @@ static void git_counter(struct result &r, const char *repo_path, const char *rev
 		goto out;
 
 	cb_data.repo = repo;
-	cb_data.r    = &r;
+	cb_data.fl   = &fl;
 
 	error = git_tree_walk(tree, GIT_TREEWALK_PRE, git_tree_walker, &cb_data);
 	if (error < 0)
@@ -489,14 +448,14 @@ int main(int argc, char **argv)
 	for (auto &a : args) {
 		uint32_t code = 0, comment = 0, whitespace = 0, files = 0, unique_files = 0;
 		std::map<std::string, type_result> results;
-		result r;
+		file_list fl;
 
 		if (use_git)
-			git_counter(r, repo, a.c_str());
+			git_counter(fl, repo, a.c_str());
 		else
-			fs_counter(r, a.c_str());
+			fs_counter(fl, a.c_str());
 
-		for (auto &fr : r.file_list) {
+		for (auto &fr : fl) {
 			if (fr.type == file_type::unknown)
 				continue;
 
