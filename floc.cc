@@ -253,6 +253,17 @@ static void fs_count_one(struct file_result &r,
 	}
 }
 
+static bool ignore_entry(const fs::directory_entry &e)
+{
+	for (const auto &c : e.path()) {
+		auto s = c.string();
+		if (s[0] == '.' && s != "." && s != "..")
+			return true;
+	}
+
+	return false;
+}
+
 static void fs_counter(file_list &fl, const char *path)
 {
 	std::map<std::string, bool> seen;
@@ -265,6 +276,9 @@ static void fs_counter(file_list &fl, const char *path)
 		fl.emplace_back(std::move(fr));
 	} else if (fs::is_directory(input)) {
 		for (auto &p : fs::recursive_directory_iterator(path)) {
+			if (ignore_entry(p))
+				continue;
+
 			file_result fr(p.path());
 			fs_count_one(fr, p, seen);
 			fl.emplace_back(std::move(fr));
