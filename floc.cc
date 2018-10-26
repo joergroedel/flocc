@@ -1,6 +1,7 @@
 #include <experimental/filesystem>
 #include <functional>
 #include <iostream>
+#include <iomanip>
 #include <cstdint>
 #include <cerrno>
 #include <list>
@@ -36,6 +37,11 @@ struct file_result {
 	file_result(std::string n)
 		: code(0), comment(0), whitespace(0), duplicate(false),
 		  type(file_type::unknown), name(n)
+	{
+	}
+
+	file_result()
+		: file_result("")
 	{
 	}
 };
@@ -266,6 +272,8 @@ static count_result fs_count_one(struct file_result &r,
 	auto size    = fs::file_size(path);
 	auto ret     = count_result::counted;
 
+	r.type = type;
+
 	std::unique_ptr<char[]> buffer(new char[size]);
 
 	if (read_file_to_buffer(path.c_str(), buffer.get(), size)) {
@@ -336,6 +344,8 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 
 	auto type    = classifile(fname);
 	auto handler = get_file_handler(type);
+
+	fr.type = type;
 
 	git_oid_fmt(sha1, oid);
 	sha1[40] = 0;
@@ -480,7 +490,8 @@ int main(int argc, char **argv)
 	}
 
 	for (auto &a : args) {
-		uint32_t code = 0, comment = 0, whitespace = 0;
+		uint32_t code = 0, comment = 0, whitespace = 0, files = 0, unique_files = 0;
+		std::map<std::string, file_result> results;
 		result r;
 
 		if (use_git)
@@ -489,8 +500,22 @@ int main(int argc, char **argv)
 			fs_counter(r, a.c_str());
 
 		for (auto &fr : r.file_list) {
+			if (fr.type == file_type::unknown)
+				continue;
+
+			std::cout << fr.name << std::endl;
+			files += 1;
+
 			if (fr.duplicate)
 				continue;
+
+			unique_files += 1;
+
+			auto &i = results[get_file_type_cstr(fr.type)];
+
+			i.code       += fr.code;
+			i.comment    += fr.comment;
+			i.whitespace += fr.whitespace;
 
 			code       += fr.code;
 			comment    += fr.comment;
@@ -498,10 +523,32 @@ int main(int argc, char **argv)
 		}
 
 		std::cout << "Results for " << a << ":" << std::endl;
-		std::cout << "  Scanned " << r.unique_files << " unique files (" << r.files << " total)" << std::endl;
-		std::cout << "  Code Lines       : " << code << std::endl;
-		std::cout << "  Comment Lines    : " << comment << std::endl;
-		std::cout << "  Whitespace Lines : " << whitespace << std::endl;
+		std::cout << "  Scanned " << unique_files << " unique files (" << files << " total)" << std::endl;
+
+		std::cout << std::left;
+		std::cout << std::setw(20) << " ";
+		std::cout << std::setw(12) << "Code";
+		std::cout << std::setw(12) << "Comment";
+		std::cout << std::setw(12) << "Blank" << std::endl;
+
+		std::cout << "  " << std::setw(56) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
+
+		for (auto &ft : results) {
+			const auto &type_str = ft.first;
+			const auto &fr = ft.second;
+
+			std::cout << "  " << std::setw(18) << type_str;
+			std::cout << std::setw(12) << fr.code;
+			std::cout << std::setw(12) << fr.comment;
+			std::cout << std::setw(12) << fr.whitespace << std::endl;
+		}
+
+		std::cout << "  " << std::setw(56) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
+
+		std::cout << std::setw(20) << "  Total";
+		std::cout << std::setw(12) << code;
+		std::cout << std::setw(12) << comment;
+		std::cout << std::setw(12) << whitespace << std::endl;
 	}
 
 	return 0;
