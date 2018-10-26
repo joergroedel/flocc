@@ -19,6 +19,13 @@
 
 namespace fs = std::experimental::filesystem;
 
+struct type_result {
+	uint32_t code = 0;
+	uint32_t comment = 0;
+	uint32_t whitespace = 0;
+	uint32_t files = 0;
+};
+
 enum class file_type {
 	unknown,
 	c,
@@ -37,11 +44,6 @@ struct file_result {
 	file_result(std::string n)
 		: code(0), comment(0), whitespace(0), duplicate(false),
 		  type(file_type::unknown), name(n)
-	{
-	}
-
-	file_result()
-		: file_result("")
 	{
 	}
 };
@@ -485,7 +487,7 @@ int main(int argc, char **argv)
 
 	for (auto &a : args) {
 		uint32_t code = 0, comment = 0, whitespace = 0, files = 0, unique_files = 0;
-		std::map<std::string, file_result> results;
+		std::map<std::string, type_result> results;
 		result r;
 
 		if (use_git)
@@ -509,6 +511,7 @@ int main(int argc, char **argv)
 			i.code       += fr.code;
 			i.comment    += fr.comment;
 			i.whitespace += fr.whitespace;
+			i.files      += 1;
 
 			code       += fr.code;
 			comment    += fr.comment;
@@ -520,25 +523,28 @@ int main(int argc, char **argv)
 
 		std::cout << std::left;
 		std::cout << std::setw(20) << " ";
+		std::cout << std::setw(12) << "Files";
 		std::cout << std::setw(12) << "Code";
 		std::cout << std::setw(12) << "Comment";
 		std::cout << std::setw(12) << "Blank" << std::endl;
 
-		std::cout << "  " << std::setw(56) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
+		std::cout << "  " << std::setw(68) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
 
 		for (auto &ft : results) {
 			const auto &type_str = ft.first;
 			const auto &fr = ft.second;
 
 			std::cout << "  " << std::setw(18) << type_str;
+			std::cout << std::setw(12) << fr.files;
 			std::cout << std::setw(12) << fr.code;
 			std::cout << std::setw(12) << fr.comment;
 			std::cout << std::setw(12) << fr.whitespace << std::endl;
 		}
 
-		std::cout << "  " << std::setw(56) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
+		std::cout << "  " << std::setw(69) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
 
 		std::cout << std::setw(20) << "  Total";
+		std::cout << std::setw(12) << files;
 		std::cout << std::setw(12) << code;
 		std::cout << std::setw(12) << comment;
 		std::cout << std::setw(12) << whitespace << std::endl;
