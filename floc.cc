@@ -168,43 +168,46 @@ static std::string hash_buffer(const char *buffer, size_t size)
 	return std::string(str);
 }
 
+static void count_file(struct result &r, const char *file, char **buf)
+{
+	const char *buffer = *buf;
+}
+
+static void fs_count_one(struct result &r, const fs::directory_entry &p,
+			 std::map<std::string, bool> &seen)
+{
+	const auto &path = p.path();
+
+	if (!fs::is_regular_file(p))
+		return;
+
+	if (!classifile(path))
+		return;
+
+	auto size = fs::file_size(path);
+
+	std::unique_ptr<char[]> buffer(new char[size]);
+
+	if (read_file_to_buffer(path.c_str(), buffer.get(), size)) {
+		std::string hash = hash_buffer(buffer.get(), size);
+		auto pos = seen.find(hash);
+
+		if (pos == seen.end()) {
+			seen[hash] = true;
+			r.unique_files += 1;
+			count_c(r, buffer.get(), size);
+		}
+
+		r.files += 1;
+	}
+}
+
 static void fs_counter(struct result &r, const char *path)
 {
-	char *buffer = NULL;
-	size_t buf_size = 0;
-	uint32_t files = 0;
 	std::map<std::string, bool> seen;
 
-	for (auto &p : fs::recursive_directory_iterator(path)) {
-		const auto &path = p.path();
-
-		if (!fs::is_regular_file(p))
-			continue;
-
-		if (!classifile(path))
-			continue;
-
-		auto size = fs::file_size(path);
-		if (size > buf_size) {
-			delete[] buffer;
-			buffer = new char[size];
-		}
-
-		if (read_file_to_buffer(path.c_str(), buffer, size)) {
-			std::string hash = hash_buffer(buffer, size);
-			auto pos = seen.find(hash);
-
-			if (pos == seen.end()) {
-				seen[hash] = true;
-				r.unique_files += 1;
-				count_c(r, buffer, size);
-			}
-
-			r.files += 1;
-		}
-	}
-
-	delete[] buffer;
+	for (auto &p : fs::recursive_directory_iterator(path))
+		fs_count_one(r, p, seen);
 }
 
 struct git_walk_cb_data {
