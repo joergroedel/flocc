@@ -205,9 +205,18 @@ static void fs_count_one(struct result &r, const fs::directory_entry &p,
 static void fs_counter(struct result &r, const char *path)
 {
 	std::map<std::string, bool> seen;
+	fs::path input = path;
 
-	for (auto &p : fs::recursive_directory_iterator(path))
-		fs_count_one(r, p, seen);
+	if (fs::is_regular_file(input)) {
+		fs::directory_entry entry(input);
+
+		fs_count_one(r, entry, seen);
+	} else if (fs::is_directory(input)) {
+		for (auto &p : fs::recursive_directory_iterator(path))
+			fs_count_one(r, p, seen);
+	} else {
+		throw fs::filesystem_error("File type not supported", input, std::error_code());
+	}
 }
 
 struct git_walk_cb_data {
