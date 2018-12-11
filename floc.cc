@@ -90,6 +90,8 @@ enum state {
 	MLCOMMENT,
 };
 
+std::map<std::string, unsigned> unknown_exts;
+
 static void finish_line(struct file_result &r, bool &code, bool &comment, size_t &counter)
 {
 	if (counter == 0)
@@ -195,6 +197,23 @@ static bool read_file_to_buffer(const char *path, char *buffer, size_t size)
 	return size == 0;
 }
 
+static void update_unknown_exts(std::string ext)
+{
+	auto p = unknown_exts.find(ext);
+
+	if (p == unknown_exts.end())
+		unknown_exts[ext]  = 1;
+	else
+		unknown_exts[ext] += 1;
+}
+
+static void dump_unknown_exts(void)
+{
+	std::cout << "Unknown Extensions:" << std::endl;
+	for (auto &e : unknown_exts)
+		std::cout << "  [" << e.first << "]: " << e.second << std::endl;
+}
+
 static file_type classifile(std::string path)
 {
 	std::string ext;
@@ -211,6 +230,8 @@ static file_type classifile(std::string path)
 		return file_type::c_cpp_header;
 	if (ext == ".cc" || ext == ".C" || ext == ".c++")
 		return file_type::cpp;
+
+	update_unknown_exts(ext);
 
 	return file_type::unknown;
 }
@@ -424,6 +445,7 @@ static void usage(void)
 	std::cout << "  --help, -h         Print this help message" << std::endl;
 	std::cout << "  --repo, -r <repo>  Path to git-repository to use, implies --git" << std::endl;
 	std::cout << "  --git, -g          Run in git-mode, arguments are interpreted as" << std::endl;
+	std::cout << "  --dump-unknown     Dump counts of unknown file extensions" << std::endl;
 	std::cout << "                     git-revisions instead of filesystem paths" << std::endl;
 }
 
@@ -431,17 +453,20 @@ enum {
 	OPTION_HELP,
 	OPTION_REPO,
 	OPTION_GIT,
+	OPTION_DUMP_UNKNOWN,
 };
 
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
 	{ "repo",		required_argument,	0, OPTION_REPO           },
 	{ "git",		no_argument,		0, OPTION_GIT            },
+	{ "dump-unknown",	no_argument,		0, OPTION_DUMP_UNKNOWN   },
 };
 
 int main(int argc, char **argv)
 {
 	std::vector<std::string> args;
+	bool dump_unknown = false;
 	const char *repo = ".";
 	bool use_git = false;
 
@@ -463,6 +488,9 @@ int main(int argc, char **argv)
 		case OPTION_GIT:
 		case 'g':
 			use_git = true;
+			break;
+		case OPTION_DUMP_UNKNOWN:
+			dump_unknown = true;
 			break;
 		default:
 			std::cerr << "Unknown option" << std::endl;
@@ -545,6 +573,9 @@ int main(int argc, char **argv)
 		std::cout << std::setw(12) << comment;
 		std::cout << std::setw(12) << whitespace << std::endl;
 	}
+
+	if (dump_unknown)
+		dump_unknown_exts();
 
 	return 0;
 }
