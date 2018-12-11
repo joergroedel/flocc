@@ -218,7 +218,12 @@ static file_type classifile(std::string path)
 {
 	std::string ext;
 
-	auto pos = path.find_last_of(".");
+	// Extract filename first to eliminate "./path/to/file" cases
+	auto pos = path.find_last_of("/");
+	if (pos != std::string::npos)
+		path = path.substr(pos + 1);
+
+	pos = path.find_last_of(".");
 	if (pos == std::string::npos)
 		return file_type::unknown;
 
