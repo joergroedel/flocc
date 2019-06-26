@@ -75,6 +75,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::text:		return "Text";
 	case file_type::cocci:		return "Coccinelle";
 	case file_type::asn1:		return "ASN.1";
+	case file_type::sed:		return "Sed";
 	}
 
 	return nullptr;
@@ -194,6 +195,8 @@ static file_type classifile(std::string path)
 		return file_type::cocci;
 	if (ext == ".asn1")
 		return file_type::asn1;
+	if (ext == ".sed")
+		return file_type::sed;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -232,6 +235,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::kconfig:
 		case file_type::shell:
 		case file_type::yaml:
+		case file_type::sed:
 			return count_shell;
 		case file_type::latex:
 			return count_latex;

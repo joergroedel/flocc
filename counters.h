@@ -26,6 +26,7 @@ enum class file_type {
 	text,
 	cocci,
 	asn1,
+	sed,
 };
 
 struct file_result {
