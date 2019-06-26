@@ -73,6 +73,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::yaml:		return "YAML";
 	case file_type::latex:		return "LaTeX";
 	case file_type::text:		return "Text";
+	case file_type::cocci:		return "Coccinelle";
 	}
 
 	return nullptr;
@@ -188,8 +189,11 @@ static file_type classifile(std::string path)
 		return file_type::latex;
 	if (ext == ".txt" || ext == ".rst")
 		return file_type::text;
+	if (ext == ".cocci")
+		return file_type::cocci;
 	if (name == "Kconfig")
 		return file_type::kconfig;
+
 
 	update_unknown_exts(ext);
 
@@ -208,6 +212,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::java:
 		case file_type::yacc:
 		case file_type::dts:
+		case file_type::cocci:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;

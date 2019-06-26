@@ -24,6 +24,7 @@ enum class file_type {
 	yaml,
 	latex,
 	text,
+	cocci,
 };
 
 struct file_result {
