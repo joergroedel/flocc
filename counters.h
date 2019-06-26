@@ -35,6 +35,7 @@ enum class file_type {
 	css,
 	lex,
 	ruby,
+	typescript,
 };
 
 struct file_result {

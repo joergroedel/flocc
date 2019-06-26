@@ -84,6 +84,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::css:		return "CSS";
 	case file_type::lex:		return "Lex";
 	case file_type::ruby:		return "Ruby";
+	case file_type::typescript:	return "TypeScript";
 	}
 
 	return nullptr;
@@ -221,6 +222,8 @@ static file_type classifile(std::string path)
 		return file_type::lex;
 	if (ext == ".rb")
 		return file_type::ruby;
+	if (ext == ".ts" || ext == ".tsx")
+		return file_type::typescript;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -245,6 +248,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::go:
 		case file_type::javascript:
 		case file_type::lex:
+		case file_type::typescript:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;
