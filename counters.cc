@@ -72,7 +72,7 @@ static size_t str_len(const char *s)
 }
 
 static bool sl_comment_start(const struct src_spec &spec,
-			     const char *buffer, size_t index, size_t size)
+			     const char *buffer, size_t index, size_t size, size_t &l)
 {
 	size_t i = 0;
 
@@ -84,15 +84,17 @@ static bool sl_comment_start(const struct src_spec &spec,
 		if (len > buf_len)
 			continue;
 
-		if (str_eq(pattern, &buffer[index], len))
+		if (str_eq(pattern, &buffer[index], len)) {
+			l = len;
 			return true;
+		}
 	}
 
 	return false;
 }
 
 static bool ml_comment_start(const struct src_spec &spec,
-			     const char *buffer, size_t index, size_t size)
+			     const char *buffer, size_t index, size_t size, size_t &l)
 {
 	const auto str = spec.ml_comment.start;
 
@@ -101,12 +103,13 @@ static bool ml_comment_start(const struct src_spec &spec,
 
 	auto len = str_len(str);
 	auto buf_len = size - index;
+	l = len;
 
 	return ((len <= buf_len) && str_eq(str, &buffer[index], len));
 }
 
 static bool ml_comment_end(const struct src_spec &spec,
-			   const char *buffer, size_t index, size_t size)
+			   const char *buffer, size_t index, size_t size, size_t &l)
 {
 	const auto str = spec.ml_comment.end;
 
@@ -115,6 +118,7 @@ static bool ml_comment_end(const struct src_spec &spec,
 
 	auto len = str_len(str);
 	auto buf_len = size - index;
+	l = len;
 
 	return ((len <= buf_len) && str_eq(str, &buffer[index], len));
 }
@@ -141,7 +145,7 @@ static void generic_count_source(const struct src_spec &spec,
 {
 	bool code = false, comment = false;
 	enum state state = BEGIN;
-	size_t counter = 0;
+	size_t counter = 0, len;
 	char c = 0, lc;
 
 	if (size == 0)
@@ -152,12 +156,14 @@ static void generic_count_source(const struct src_spec &spec,
 		c  = buffer[index];
 
 		if (state == BEGIN) {
-			if (ml_comment_start(spec, buffer, index, size)) {
+			if (ml_comment_start(spec, buffer, index, size, len)) {
 				comment = true;
 				state   = MLCOMMENT;
-			} else if (sl_comment_start(spec, buffer, index, size)) {
+				index += len - 1;
+			} else if (sl_comment_start(spec, buffer, index, size, len)) {
 				comment = true;
 				state   = SLCOMMENT;
+				index += len - 1;
 			} else if (c == '"') {
 				code = true;
 				state = STRING;
@@ -182,8 +188,9 @@ static void generic_count_source(const struct src_spec &spec,
 				state = BEGIN;
 			}
 		} else if (state == MLCOMMENT) {
-			if (ml_comment_end(spec, buffer, index, size)) {
+			if (ml_comment_end(spec, buffer, index, size, len)) {
 				state = BEGIN;
+				index += len - 1;
 			} else if (c == '\n') {
 				finish_line(r, code, comment, counter);
 				code    = false;
