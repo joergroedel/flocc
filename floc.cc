@@ -69,6 +69,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::dts:		return "Device-Tree";
 	case file_type::makefile:	return "Makefile";
 	case file_type::kconfig:	return "Kconfig";
+	case file_type::shell:		return "Shell";
 	}
 
 	return nullptr;
@@ -176,6 +177,8 @@ static file_type classifile(std::string path)
 		return file_type::yacc;
 	if (ext == ".dts" || ext == ".dtsi")
 		return file_type::dts;
+	if (ext == ".sh")
+		return file_type::shell;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -210,6 +213,7 @@ static file_handler get_file_handler(file_type type)
 			return count_xml;
 		case file_type::makefile:
 		case file_type::kconfig:
+		case file_type::shell:
 			return count_shell;
 		default:
 			return fh_default;

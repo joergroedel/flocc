@@ -20,6 +20,7 @@ enum class file_type {
 	dts,
 	makefile,
 	kconfig,
+	shell,
 };
 
 struct file_result {
