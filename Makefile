@@ -1,4 +1,4 @@
-CXX=g++-6
+CXX=g++
 CXXFLAGS=-Wall -O3 -std=c++11
 TARGET=floc
 

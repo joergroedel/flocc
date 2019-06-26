@@ -570,7 +570,7 @@ int main(int argc, char **argv)
 			std::cout << std::setw(12) << fr.whitespace << std::endl;
 		}
 
-		std::cout << "  " << std::setw(69) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
+		std::cout << "  " << std::setw(68) << std::setfill('-') << "" << std::setfill(' ') << std::endl;
 
 		std::cout << std::setw(20) << "  Total";
 		std::cout << std::setw(12) << files;
