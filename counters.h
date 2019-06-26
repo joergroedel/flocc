@@ -21,6 +21,8 @@ enum class file_type {
 	makefile,
 	kconfig,
 	shell,
+	yaml,
+	latex,
 };
 
 struct file_result {
@@ -40,5 +42,6 @@ void count_python(struct file_result &r, const char *buffer, size_t size);
 void count_perl(struct file_result &r, const char *buffer, size_t size);
 void count_xml(struct file_result &r, const char *buffer, size_t size);
 void count_shell(struct file_result &r, const char *buffer, size_t size);
+void count_latex(struct file_result &r, const char *buffer, size_t size);
 
 #endif
