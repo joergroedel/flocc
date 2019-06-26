@@ -57,6 +57,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::c:		return "C";
 	case file_type::c_cpp_header:	return "C/C++ Header";
 	case file_type::cpp:		return "C++";
+	case file_type::assembly:	return "Assembler";
 	}
 
 	return nullptr;
@@ -137,6 +138,8 @@ static file_type classifile(std::string path)
 		return file_type::c_cpp_header;
 	if (ext == ".cc" || ext == ".C" || ext == ".c++")
 		return file_type::cpp;
+	if (ext == ".S")
+		return file_type::assembly;
 
 	update_unknown_exts(ext);
 
@@ -153,6 +156,8 @@ static file_handler get_file_handler(file_type type)
 		case file_type::c_cpp_header:
 		case file_type::cpp:
 			return count_c;
+		case file_type::assembly:
+			return count_asm;
 		default:
 			return fh_default;
 	}
