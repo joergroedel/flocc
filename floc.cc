@@ -74,6 +74,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::latex:		return "LaTeX";
 	case file_type::text:		return "Text";
 	case file_type::cocci:		return "Coccinelle";
+	case file_type::asn1:		return "ASN.1";
 	}
 
 	return nullptr;
@@ -191,6 +192,8 @@ static file_type classifile(std::string path)
 		return file_type::text;
 	if (ext == ".cocci")
 		return file_type::cocci;
+	if (ext == ".asn1")
+		return file_type::asn1;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -234,6 +237,8 @@ static file_handler get_file_handler(file_type type)
 			return count_latex;
 		case file_type::text:
 			return count_text;
+		case file_type::asn1:
+			return count_asn1;
 		default:
 			return fh_default;
 	}

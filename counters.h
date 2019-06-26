@@ -25,6 +25,7 @@ enum class file_type {
 	latex,
 	text,
 	cocci,
+	asn1,
 };
 
 struct file_result {
@@ -46,5 +47,6 @@ void count_xml(struct file_result &r, const char *buffer, size_t size);
 void count_shell(struct file_result &r, const char *buffer, size_t size);
 void count_latex(struct file_result &r, const char *buffer, size_t size);
 void count_text(struct file_result &r, const char *buffer, size_t size);
+void count_asn1(struct file_result &r, const char *buffer, size_t size);
 
 #endif
