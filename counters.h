@@ -18,6 +18,8 @@ enum class file_type {
 	java,
 	yacc,
 	dts,
+	makefile,
+	kconfig,
 };
 
 struct file_result {
@@ -36,5 +38,6 @@ void count_asm(struct file_result &r, const char *buffer, size_t size);
 void count_python(struct file_result &r, const char *buffer, size_t size);
 void count_perl(struct file_result &r, const char *buffer, size_t size);
 void count_xml(struct file_result &r, const char *buffer, size_t size);
+void count_shell(struct file_result &r, const char *buffer, size_t size);
 
 #endif

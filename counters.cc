@@ -267,3 +267,9 @@ void count_xml(struct file_result &r, const char *buffer, size_t size)
 {
 	generic_count_source(xml_spec, r, buffer, size);
 }
+
+void count_shell(struct file_result &r, const char *buffer, size_t size)
+{
+	generic_count_source(shell_spec, r, buffer, size);
+}
+

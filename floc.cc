@@ -67,6 +67,8 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::java:		return "Java";
 	case file_type::yacc:		return "Yacc";
 	case file_type::dts:		return "Device-Tree";
+	case file_type::makefile:	return "Makefile";
+	case file_type::kconfig:	return "Kconfig";
 	}
 
 	return nullptr;
@@ -128,7 +130,7 @@ static void dump_unknown_exts(void)
 
 static file_type classifile(std::string path)
 {
-	std::string ext;
+	std::string name, ext;
 
 	// Extract filename first to eliminate "./path/to/file" cases
 	auto pos = path.find_last_of("/");
@@ -136,10 +138,17 @@ static file_type classifile(std::string path)
 		path = path.substr(pos + 1);
 
 	pos = path.find_last_of(".");
-	if (pos == std::string::npos)
-		return file_type::unknown;
+	if (pos == std::string::npos) {
+		if (path == "Makefile")
+			return file_type::makefile;
+		else if (path == "Kconfig")
+			return file_type::kconfig;
+		else
+			return file_type::unknown;
+	}
 
-	ext = path.substr(pos);
+	name = path.substr(0, pos - 1);
+	ext  = path.substr(pos);
 
 	if (ext == ".c")
 		return file_type::c;
@@ -167,6 +176,8 @@ static file_type classifile(std::string path)
 		return file_type::yacc;
 	if (ext == ".dts" || ext == ".dtsi")
 		return file_type::dts;
+	if (name == "Kconfig")
+		return file_type::kconfig;
 
 	update_unknown_exts(ext);
 
@@ -197,6 +208,9 @@ static file_handler get_file_handler(file_type type)
 		case file_type::svg:
 		case file_type::xslt:
 			return count_xml;
+		case file_type::makefile:
+		case file_type::kconfig:
+			return count_shell;
 		default:
 			return fh_default;
 	}
