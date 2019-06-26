@@ -9,6 +9,7 @@ enum class file_type {
 	c_cpp_header,
 	cpp,
 	assembly,
+	python,
 };
 
 struct file_result {
@@ -24,5 +25,6 @@ struct file_result {
 
 void count_c(struct file_result &r, const char *buffer, size_t size);
 void count_asm(struct file_result &r, const char *buffer, size_t size);
+void count_python(struct file_result &r, const char *buffer, size_t size);
 
 #endif

@@ -26,6 +26,14 @@ struct src_spec asm_spec {
 	.sl_comment = { "#", nullptr },
 };
 
+struct src_spec python_spec {
+	.ml_comment = {
+		.start = "\"\"\"",
+		.end   = "\"\"\""
+	},
+	.sl_comment = { "#", nullptr },
+};
+
 enum state {
 	BEGIN,
 	STRING,
@@ -197,4 +205,9 @@ void count_c(struct file_result &r, const char *buffer, size_t size)
 void count_asm(struct file_result &r, const char *buffer, size_t size)
 {
 	generic_count_source(asm_spec, r, buffer, size);
+}
+
+void count_python(struct file_result &r, const char *buffer, size_t size)
+{
+	generic_count_source(python_spec, r, buffer, size);
 }

@@ -58,6 +58,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::c_cpp_header:	return "C/C++ Header";
 	case file_type::cpp:		return "C++";
 	case file_type::assembly:	return "Assembler";
+	case file_type::python:		return "Python";
 	}
 
 	return nullptr;
@@ -140,6 +141,8 @@ static file_type classifile(std::string path)
 		return file_type::cpp;
 	if (ext == ".S")
 		return file_type::assembly;
+	if (ext == ".py")
+		return file_type::python;
 
 	update_unknown_exts(ext);
 
@@ -158,6 +161,8 @@ static file_handler get_file_handler(file_type type)
 			return count_c;
 		case file_type::assembly:
 			return count_asm;
+		case file_type::python:
+			return count_python;
 		default:
 			return fh_default;
 	}
