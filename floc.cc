@@ -64,6 +64,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::html:		return "HTML";
 	case file_type::svg:		return "SVG";
 	case file_type::xslt:		return "XSLT";
+	case file_type::java:		return "Java";
 	}
 
 	return nullptr;
@@ -158,6 +159,8 @@ static file_type classifile(std::string path)
 		return file_type::svg;
 	if (ext == ".xsl" || ext == ".xslt")
 		return file_type::xslt;
+	if (ext == ".java")
+		return file_type::java;
 
 	update_unknown_exts(ext);
 
@@ -173,6 +176,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::c:
 		case file_type::c_cpp_header:
 		case file_type::cpp:
+		case file_type::java:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;

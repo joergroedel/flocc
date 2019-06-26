@@ -15,6 +15,7 @@ enum class file_type {
 	html,
 	svg,
 	xslt,
+	java,
 };
 
 struct file_result {
