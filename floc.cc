@@ -353,11 +353,19 @@ static void fs_counter(file_list &fl, const char *path)
 		fs_count_one(fr, entry, seen, fb);
 		fl.emplace_back(std::move(fr));
 	} else if (fs::is_directory(input)) {
+		std::string::size_type base_len;
+		std::string base_path = path;
+
+		if (*base_path.rbegin() != '/')
+			base_path += '/';
+
+		base_len = base_path.length();
+
 		for (auto &p : fs::recursive_directory_iterator(path)) {
 			if (ignore_entry(p))
 				continue;
 
-			file_result fr(p.path());
+			file_result fr(p.path().string().substr(base_len));
 			fs_count_one(fr, p, seen, fb);
 			fl.emplace_back(std::move(fr));
 		}
