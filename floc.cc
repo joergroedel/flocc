@@ -60,6 +60,10 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::assembly:	return "Assembler";
 	case file_type::python:		return "Python";
 	case file_type::perl:		return "Perl";
+	case file_type::xml:		return "XML";
+	case file_type::html:		return "HTML";
+	case file_type::svg:		return "SVG";
+	case file_type::xslt:		return "XSLT";
 	}
 
 	return nullptr;
@@ -146,6 +150,14 @@ static file_type classifile(std::string path)
 		return file_type::python;
 	if (ext == ".pl" || ext == ".pm")
 		return file_type::perl;
+	if (ext == ".xml")
+		return file_type::xml;
+	if (ext == ".html" || ext == ".htm" || ext == ".xhtml")
+		return file_type::html;
+	if (ext == ".svg")
+		return file_type::svg;
+	if (ext == ".xsl" || ext == ".xslt")
+		return file_type::xslt;
 
 	update_unknown_exts(ext);
 
@@ -168,6 +180,11 @@ static file_handler get_file_handler(file_type type)
 			return count_python;
 		case file_type::perl:
 			return count_perl;
+		case file_type::xml:
+		case file_type::html:
+		case file_type::svg:
+		case file_type::xslt:
+			return count_xml;
 		default:
 			return fh_default;
 	}

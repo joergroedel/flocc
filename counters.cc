@@ -42,6 +42,14 @@ struct src_spec shell_spec {
 	.sl_comment = { "#", nullptr },
 };
 
+struct src_spec xml_spec {
+	.ml_comment = {
+		.start = "<!--",
+		.end   = "-->"
+	},
+	.sl_comment = { },
+};
+
 enum state {
 	BEGIN,
 	STRING,
@@ -253,4 +261,9 @@ void count_perl(struct file_result &r, const char *buffer, size_t size)
 	// Perl needs some pre-processing
 	size = perl_strip__END__(buffer, size);
 	generic_count_source(shell_spec, r, buffer, size);
+}
+
+void count_xml(struct file_result &r, const char *buffer, size_t size)
+{
+	generic_count_source(xml_spec, r, buffer, size);
 }
