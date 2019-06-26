@@ -23,6 +23,7 @@ enum class file_type {
 	shell,
 	yaml,
 	latex,
+	text,
 };
 
 struct file_result {
@@ -43,5 +44,6 @@ void count_perl(struct file_result &r, const char *buffer, size_t size);
 void count_xml(struct file_result &r, const char *buffer, size_t size);
 void count_shell(struct file_result &r, const char *buffer, size_t size);
 void count_latex(struct file_result &r, const char *buffer, size_t size);
+void count_text(struct file_result &r, const char *buffer, size_t size);
 
 #endif

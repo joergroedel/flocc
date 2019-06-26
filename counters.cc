@@ -58,6 +58,14 @@ struct src_spec latex_spec {
 	.sl_comment = { "%", nullptr },
 };
 
+struct src_spec text_spec {
+	.ml_comment = {
+		.start = nullptr,
+		.end   = nullptr
+	},
+	.sl_comment = { nullptr },
+};
+
 enum state {
 	BEGIN,
 	STRING,
@@ -284,4 +292,9 @@ void count_shell(struct file_result &r, const char *buffer, size_t size)
 void count_latex(struct file_result &r, const char *buffer, size_t size)
 {
 	generic_count_source(latex_spec, r, buffer, size);
+}
+
+void count_text(struct file_result &r, const char *buffer, size_t size)
+{
+	generic_count_source(text_spec, r, buffer, size);
 }
