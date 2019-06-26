@@ -80,6 +80,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::rust:		return "Rust";
 	case file_type::go:		return "Go";
 	case file_type::json:		return "JSON";
+	case file_type::javascript:	return "JavaScript";
 	}
 
 	return nullptr;
@@ -209,6 +210,8 @@ static file_type classifile(std::string path)
 		return file_type::go;
 	if (ext == ".json")
 		return file_type::json;
+	if (ext == ".js")
+		return file_type::javascript;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -231,6 +234,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::dts:
 		case file_type::cocci:
 		case file_type::go:
+		case file_type::javascript:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;

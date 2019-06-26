@@ -31,6 +31,7 @@ enum class file_type {
 	rust,
 	go,
 	json,
+	javascript,
 };
 
 struct file_result {
