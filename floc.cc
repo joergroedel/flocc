@@ -77,6 +77,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::asn1:		return "ASN.1";
 	case file_type::sed:		return "Sed";
 	case file_type::awk:		return "Awk";
+	case file_type::rust:		return "Rust";
 	}
 
 	return nullptr;
@@ -200,9 +201,10 @@ static file_type classifile(std::string path)
 		return file_type::sed;
 	if (ext == ".awk")
 		return file_type::awk;
+	if (ext == ".rs")
+		return file_type::rust;
 	if (name == "Kconfig")
 		return file_type::kconfig;
-
 
 	update_unknown_exts(ext);
 
@@ -247,6 +249,8 @@ static file_handler get_file_handler(file_type type)
 			return count_text;
 		case file_type::asn1:
 			return count_asn1;
+		case file_type::rust:
+			return count_rust;
 		default:
 			return fh_default;
 	}

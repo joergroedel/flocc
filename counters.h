@@ -28,6 +28,7 @@ enum class file_type {
 	asn1,
 	sed,
 	awk,
+	rust,
 };
 
 struct file_result {
@@ -50,5 +51,6 @@ void count_shell(struct file_result &r, const char *buffer, size_t size);
 void count_latex(struct file_result &r, const char *buffer, size_t size);
 void count_text(struct file_result &r, const char *buffer, size_t size);
 void count_asn1(struct file_result &r, const char *buffer, size_t size);
+void count_rust(struct file_result &r, const char *buffer, size_t size);
 
 #endif
