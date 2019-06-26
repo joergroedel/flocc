@@ -444,6 +444,18 @@ static void git_counter(file_list &fl, const char *repo_path, const char *rev)
 
 	oid = git_object_id(head);
 
+	if (git_object_type(head) == GIT_OBJ_TAG) {
+		git_tag *tag;
+
+		error = git_tag_lookup(&tag, repo, oid);
+		if (error < 0)
+			goto out;
+
+		oid = git_tag_target_id(tag);
+
+		git_tag_free(tag);
+	}
+
 	error = git_commit_lookup(&commit, repo, oid);
 	if (error < 0)
 		goto out;
