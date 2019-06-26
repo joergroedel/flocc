@@ -90,6 +90,14 @@ struct src_spec css_spec {
 	.sl_comment = { nullptr },
 };
 
+struct src_spec ruby_spec {
+	.ml_comment = {
+		.start = "=begin",
+		.end   = "=end"
+	},
+	.sl_comment = { "#", nullptr },
+};
+
 enum state {
 	BEGIN,
 	STRING,
@@ -336,4 +344,9 @@ void count_rust(struct file_result &r, const char *buffer, size_t size)
 void count_css(struct file_result &r, const char *buffer, size_t size)
 {
 	generic_count_source(css_spec, r, buffer, size);
+}
+
+void count_ruby(struct file_result &r, const char *buffer, size_t size)
+{
+	generic_count_source(ruby_spec, r, buffer, size);
 }

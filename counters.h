@@ -33,6 +33,8 @@ enum class file_type {
 	json,
 	javascript,
 	css,
+	lex,
+	ruby,
 };
 
 struct file_result {
@@ -57,5 +59,6 @@ void count_text(struct file_result &r, const char *buffer, size_t size);
 void count_asn1(struct file_result &r, const char *buffer, size_t size);
 void count_rust(struct file_result &r, const char *buffer, size_t size);
 void count_css(struct file_result &r, const char *buffer, size_t size);
+void count_ruby(struct file_result &r, const char *buffer, size_t size);
 
 #endif

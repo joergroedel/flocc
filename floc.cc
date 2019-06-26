@@ -82,6 +82,8 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::json:		return "JSON";
 	case file_type::javascript:	return "JavaScript";
 	case file_type::css:		return "CSS";
+	case file_type::lex:		return "Lex";
+	case file_type::ruby:		return "Ruby";
 	}
 
 	return nullptr;
@@ -215,6 +217,10 @@ static file_type classifile(std::string path)
 		return file_type::javascript;
 	if (ext == ".css")
 		return file_type::css;
+	if (ext == ".l")
+		return file_type::lex;
+	if (ext == ".rb")
+		return file_type::ruby;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -238,6 +244,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::cocci:
 		case file_type::go:
 		case file_type::javascript:
+		case file_type::lex:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;
@@ -268,6 +275,8 @@ static file_handler get_file_handler(file_type type)
 			return count_rust;
 		case file_type::css:
 			return count_css;
+		case file_type::ruby:
+			return count_ruby;
 		default:
 			return fh_default;
 	}
