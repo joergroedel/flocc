@@ -48,6 +48,24 @@ struct file_result {
 	}
 };
 
+struct ml_comment {
+	const char *start;
+	const char *end;
+};
+
+struct src_spec {
+	struct ml_comment ml_comment;
+	const char *sl_comment[];
+};
+
+struct src_spec c_spec {
+	.ml_comment = {
+		.start = "/*",
+		.end   = "*/"
+	},
+	.sl_comment = { "//", nullptr },
+};
+
 struct file_buffer {
 	size_t size = 0;
 	char *buffer = nullptr;
@@ -92,6 +110,78 @@ enum state {
 
 std::map<std::string, unsigned> unknown_exts;
 
+/*
+ * Use static variants for strlen and strncmp for performance reasons.
+ * Performance counting LOC for C/C++ dropped by factor 4 using the
+ * variants from the C library.
+ */
+static bool str_eq(const char *s1, const char *s2, size_t len)
+{
+	for (size_t i = 0; i < len; ++i) {
+		if (s1[i] != s2[i])
+			return false;
+	}
+
+	return true;
+}
+
+static size_t str_len(const char *s)
+{
+	size_t len = 0;
+
+	for (len = 0; s[len] != 0; ++len);
+
+	return len;
+}
+
+static bool sl_comment_start(const struct src_spec &spec,
+			     const char *buffer, size_t index, size_t size)
+{
+	size_t i = 0;
+
+	while (spec.sl_comment[i] != nullptr) {
+		const auto pattern = spec.sl_comment[i++];
+		auto len = str_len(pattern);
+		auto buf_len = size - index;
+
+		if (len > buf_len)
+			continue;
+
+		if (str_eq(pattern, &buffer[index], len))
+			return true;
+	}
+
+	return false;
+}
+
+static bool ml_comment_start(const struct src_spec &spec,
+			     const char *buffer, size_t index, size_t size)
+{
+	const auto str = spec.ml_comment.start;
+
+	if (str == nullptr)
+		return false;
+
+	auto len = str_len(str);
+	auto buf_len = size - index;
+
+	return ((len <= buf_len) && str_eq(str, &buffer[index], len));
+}
+
+static bool ml_comment_end(const struct src_spec &spec,
+			   const char *buffer, size_t index, size_t size)
+{
+	const auto str = spec.ml_comment.end;
+
+	if (str == nullptr)
+		return false;
+
+	auto len = str_len(str);
+	auto buf_len = size - index;
+
+	return ((len <= buf_len) && str_eq(str, &buffer[index], len));
+}
+
 static void finish_line(struct file_result &r, bool &code, bool &comment, size_t &counter)
 {
 	if (counter == 0)
@@ -107,7 +197,10 @@ static void finish_line(struct file_result &r, bool &code, bool &comment, size_t
 	counter = 0;
 }
 
-static void count_c(struct file_result &r, const char *buffer, size_t size)
+static void generic_count_source(const struct src_spec &spec,
+				 struct file_result &r,
+				 const char *buffer,
+				 size_t size)
 {
 	bool code = false, comment = false;
 	enum state state = BEGIN;
@@ -122,15 +215,15 @@ static void count_c(struct file_result &r, const char *buffer, size_t size)
 		c  = buffer[index];
 
 		if (state == BEGIN) {
-			if (c == '"') {
-				code = true;
-				state = STRING;
-			} else if (c == '*' && lc == '/') {
+			if (ml_comment_start(spec, buffer, index, size)) {
 				comment = true;
 				state   = MLCOMMENT;
-			} else if (c == '/' && lc == '/') {
+			} else if (sl_comment_start(spec, buffer, index, size)) {
 				comment = true;
 				state   = SLCOMMENT;
+			} else if (c == '"') {
+				code = true;
+				state = STRING;
 			} else if (c == '\n') {
 				finish_line(r, code, comment, counter);
 				code = comment = false;
@@ -152,7 +245,7 @@ static void count_c(struct file_result &r, const char *buffer, size_t size)
 				state = BEGIN;
 			}
 		} else if (state == MLCOMMENT) {
-			if (c == '/' && lc == '*') {
+			if (ml_comment_end(spec, buffer, index, size)) {
 				state = BEGIN;
 			} else if (c == '\n') {
 				finish_line(r, code, comment, counter);
@@ -165,6 +258,11 @@ static void count_c(struct file_result &r, const char *buffer, size_t size)
 	// Finish the last line
 	if (c != '\n')
 		finish_line(r, code, comment, counter);
+}
+
+static void count_c(struct file_result &r, const char *buffer, size_t size)
+{
+	generic_count_source(c_spec, r, buffer, size);
 }
 
 static bool read_file_to_buffer(const char *path, char *buffer, size_t size)
