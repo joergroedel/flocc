@@ -29,6 +29,7 @@ enum class file_type {
 	sed,
 	awk,
 	rust,
+	go,
 };
 
 struct file_result {

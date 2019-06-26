@@ -78,6 +78,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::sed:		return "Sed";
 	case file_type::awk:		return "Awk";
 	case file_type::rust:		return "Rust";
+	case file_type::go:		return "Go";
 	}
 
 	return nullptr;
@@ -203,6 +204,8 @@ static file_type classifile(std::string path)
 		return file_type::awk;
 	if (ext == ".rs")
 		return file_type::rust;
+	if (ext == ".go")
+		return file_type::go;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -224,6 +227,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::yacc:
 		case file_type::dts:
 		case file_type::cocci:
+		case file_type::go:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;
