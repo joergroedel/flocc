@@ -59,6 +59,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::cpp:		return "C++";
 	case file_type::assembly:	return "Assembler";
 	case file_type::python:		return "Python";
+	case file_type::perl:		return "Perl";
 	}
 
 	return nullptr;
@@ -143,6 +144,8 @@ static file_type classifile(std::string path)
 		return file_type::assembly;
 	if (ext == ".py")
 		return file_type::python;
+	if (ext == ".pl" || ext == ".pm")
+		return file_type::perl;
 
 	update_unknown_exts(ext);
 
@@ -163,6 +166,8 @@ static file_handler get_file_handler(file_type type)
 			return count_asm;
 		case file_type::python:
 			return count_python;
+		case file_type::perl:
+			return count_perl;
 		default:
 			return fh_default;
 	}

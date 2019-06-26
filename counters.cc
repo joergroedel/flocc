@@ -34,6 +34,14 @@ struct src_spec python_spec {
 	.sl_comment = { "#", nullptr },
 };
 
+struct src_spec shell_spec {
+	.ml_comment = {
+		.start = nullptr,
+		.end   = nullptr
+	},
+	.sl_comment = { "#", nullptr },
+};
+
 enum state {
 	BEGIN,
 	STRING,
@@ -203,6 +211,27 @@ static void generic_count_source(const struct src_spec &spec,
 	if (c != '\n')
 		finish_line(r, code, comment, counter);
 }
+static size_t perl_strip__END__(const char *buffer, size_t size)
+{
+	const char *pattern = "__END__";
+	size_t pattern_len = 7;
+
+
+	for (size_t ret = 0; ret < size; ++ret) {
+		if (buffer[ret] != '\n')
+			continue;
+
+		auto remain = size - ret;
+
+		if (remain < pattern_len)
+			break;
+
+		if (str_eq(&buffer[ret + 1], pattern, pattern_len))
+			return ret - 1;
+	}
+
+	return size;
+}
 
 void count_c(struct file_result &r, const char *buffer, size_t size)
 {
@@ -217,4 +246,11 @@ void count_asm(struct file_result &r, const char *buffer, size_t size)
 void count_python(struct file_result &r, const char *buffer, size_t size)
 {
 	generic_count_source(python_spec, r, buffer, size);
+}
+
+void count_perl(struct file_result &r, const char *buffer, size_t size)
+{
+	// Perl needs some pre-processing
+	size = perl_strip__END__(buffer, size);
+	generic_count_source(shell_spec, r, buffer, size);
 }
