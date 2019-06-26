@@ -30,6 +30,7 @@ enum class file_type {
 	awk,
 	rust,
 	go,
+	json,
 };
 
 struct file_result {

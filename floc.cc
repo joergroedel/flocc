@@ -79,6 +79,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::awk:		return "Awk";
 	case file_type::rust:		return "Rust";
 	case file_type::go:		return "Go";
+	case file_type::json:		return "JSON";
 	}
 
 	return nullptr;
@@ -206,6 +207,8 @@ static file_type classifile(std::string path)
 		return file_type::rust;
 	if (ext == ".go")
 		return file_type::go;
+	if (ext == ".json")
+		return file_type::json;
 	if (name == "Kconfig")
 		return file_type::kconfig;
 
@@ -250,6 +253,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::latex:
 			return count_latex;
 		case file_type::text:
+		case file_type::json:
 			return count_text;
 		case file_type::asn1:
 			return count_asn1;
