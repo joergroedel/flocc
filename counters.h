@@ -17,6 +17,7 @@ enum class file_type {
 	xslt,
 	java,
 	yacc,
+	dts,
 };
 
 struct file_result {

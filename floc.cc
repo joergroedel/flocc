@@ -66,6 +66,7 @@ static const char *get_file_type_cstr(file_type t)
 	case file_type::xslt:		return "XSLT";
 	case file_type::java:		return "Java";
 	case file_type::yacc:		return "Yacc";
+	case file_type::dts:		return "Device-Tree";
 	}
 
 	return nullptr;
@@ -164,6 +165,8 @@ static file_type classifile(std::string path)
 		return file_type::java;
 	if (ext == ".y")
 		return file_type::yacc;
+	if (ext == ".dts" || ext == ".dtsi")
+		return file_type::dts;
 
 	update_unknown_exts(ext);
 
@@ -181,6 +184,7 @@ static file_handler get_file_handler(file_type type)
 		case file_type::cpp:
 		case file_type::java:
 		case file_type::yacc:
+		case file_type::dts:
 			return count_c;
 		case file_type::assembly:
 			return count_asm;
