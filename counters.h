@@ -4,6 +4,7 @@
 #include <string>
 
 enum class file_type {
+	directory,
 	unknown,
 	c,
 	c_cpp_header,

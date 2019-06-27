@@ -16,6 +16,7 @@
 #include <git2.h>
 
 #include "counters.h"
+#include "filetree.h"
 #include "md4.h"
 
 namespace fs = std::experimental::filesystem;
@@ -53,6 +54,7 @@ using file_list    = std::list<file_result>;
 static const char *get_file_type_cstr(file_type t)
 {
 	switch (t) {
+	case file_type::directory:	return "Directory";
 	case file_type::unknown:	return "Unknown";
 	case file_type::c:		return "C";
 	case file_type::c_cpp_header:	return "C/C++ Header";
