@@ -3,41 +3,7 @@
 
 #include <string>
 
-enum class file_type {
-	directory,
-	unknown,
-	c,
-	c_cpp_header,
-	cpp,
-	assembly,
-	python,
-	perl,
-	xml,
-	html,
-	svg,
-	xslt,
-	java,
-	yacc,
-	dts,
-	makefile,
-	kconfig,
-	shell,
-	yaml,
-	latex,
-	text,
-	cocci,
-	asn1,
-	sed,
-	awk,
-	rust,
-	go,
-	json,
-	javascript,
-	css,
-	lex,
-	ruby,
-	typescript,
-};
+#include "classifier.h"
 
 struct file_result {
 	uint32_t code;
