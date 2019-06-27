@@ -569,10 +569,18 @@ int main(int argc, char **argv)
 		std::map<std::string, type_result> results;
 		file_list fl;
 
-		if (use_git)
-			git_counter(fl, repo, a.c_str());
-		else
-			fs_counter(fl, a.c_str());
+		try {
+			if (use_git)
+				git_counter(fl, repo, a.c_str());
+			else
+				fs_counter(fl, a.c_str());
+		} catch (const fs::filesystem_error& f) {
+			std::cerr << "Can not access path " << f.path1() << std::endl;
+			continue;
+		} catch (const std::runtime_error& e) {
+			std::cerr << "Error: " << e.what() << std::endl;
+			continue;
+		}
 
 		for (auto &fr : fl) {
 			if (fr.type == file_type::unknown)
