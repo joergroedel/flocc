@@ -1,6 +1,7 @@
 #ifndef __FILETREE_H
 #define __FILETREE_H
 
+#include <ostream>
 #include <string>
 #include <map>
 
@@ -26,8 +27,9 @@ public:
 	file_entry();
 	file_entry *get_entry(std::string, file_type);
 	void add_results(file_type, const loc_result&);
+	void jsonize(std::ostream&);
 };
 
-void insert_file_result(file_entry *root, const struct file_result r);
+void insert_file_result(file_entry *root, const struct file_result &r);
 
 #endif

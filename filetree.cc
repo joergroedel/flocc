@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 
+#include "classifier.h"
 #include "filetree.h"
 
 namespace fs = std::experimental::filesystem;
@@ -49,7 +50,48 @@ void file_entry::add_results(file_type type, const loc_result& r)
 	m_results[type] += r;
 }
 
-void insert_file_result(file_entry *root, const struct file_result r)
+void file_entry::jsonize(std::ostream& os)
+{
+	bool first = true;
+
+	// Open Object
+	os << "{";
+
+	// Print type
+	os << "\"Type\":\"" << get_file_type_cstr(m_type) << "\"";
+
+	os << ",\"Results\":[";
+	for (auto &pr : m_results) {
+		if (!first)
+			os << ",";
+		first = false;
+		os << "{";
+		os << "\"Type\":\"" << get_file_type_cstr(pr.first) << "\",";
+		os << "\"Code\":" << pr.second.code << ",";
+		os << "\"Comment\":" << pr.second.comment << ",";
+		os << "\"Blank\":" << pr.second.whitespace;
+		os << "}";
+	}
+	os << "]";
+
+	if (m_type == file_type::directory) {
+		os << ",\"Entries\":{";
+		first = true;
+		for (auto &pe : m_entries) {
+			if (!first)
+				os << ",";
+			first = false;
+			os << "\"" << pe.first << "\":";
+			pe.second.jsonize(os);
+		}
+		os << "}";
+	}
+
+	// Close Object
+	os << "}";
+}
+
+void insert_file_result(file_entry *root, const struct file_result &r)
 {
 	fs::path fpath           = r.name;
 	fs::path ppath           = fpath.parent_path();

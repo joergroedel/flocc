@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <list>
 #include <map>
+#include <fstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
