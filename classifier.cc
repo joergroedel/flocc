@@ -44,6 +44,8 @@ file_type classifile(std::string path)
 	name = path.substr(0, pos - 1);
 	ext  = path.substr(pos);
 
+	if (ext == ".o")
+		return file_type::ignore;
 	if (ext == ".c")
 		return file_type::c;
 	if (ext == ".h" || ext == ".hh")
