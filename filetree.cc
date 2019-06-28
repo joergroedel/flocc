@@ -109,11 +109,13 @@ void insert_file_result(file_entry *root, const struct file_result &r)
 	result.comment    = r.comment;
 	result.whitespace = r.whitespace;
 	result.files      = 1;
-	root->add_results(r.type, result);
+	if (!r.duplicate)
+		root->add_results(r.type, result);
 
 	for (auto &de : ppath) {
 		entry = entry->get_entry(de, file_type::directory);
-		entry->add_results(r.type, result);
+		if (!r.duplicate)
+			entry->add_results(r.type, result);
 	}
 
 	entry = entry->get_entry(filename, r.type);
