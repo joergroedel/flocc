@@ -426,7 +426,7 @@ static void print_results_json(std::string arg, file_list &fl, std::ofstream &os
 		insert_file_result(&root, fr);
 
 	// Write Json Data
-	root.jsonize(os);
+	root.jsonize(os, arg);
 }
 
 static void usage(void)

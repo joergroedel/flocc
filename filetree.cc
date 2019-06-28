@@ -51,12 +51,16 @@ void file_entry::add_results(file_type type, const loc_result& r)
 	m_results[type] += r;
 }
 
-void file_entry::jsonize(std::ostream& os)
+void file_entry::jsonize(std::ostream& os, std::string arg)
 {
 	bool first = true;
 
 	// Open Object
 	os << "{";
+
+	// Print Argument, if given
+	if (arg.length() > 0)
+		os << "\"Source\":\"" << arg << "\",";
 
 	// Print type
 	os << "\"Type\":\"" << get_file_type_cstr(m_type) << "\"";
@@ -84,7 +88,7 @@ void file_entry::jsonize(std::ostream& os)
 				os << ",";
 			first = false;
 			os << "\"" << pe.first << "\":";
-			pe.second.jsonize(os);
+			pe.second.jsonize(os, std::string());
 		}
 		os << "}";
 	}

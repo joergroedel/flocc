@@ -28,7 +28,7 @@ public:
 	file_entry();
 	file_entry *get_entry(std::string, file_type);
 	void add_results(file_type, const loc_result&);
-	void jsonize(std::ostream&);
+	void jsonize(std::ostream&, std::string);
 };
 
 void insert_file_result(file_entry *root, const struct file_result &r);
