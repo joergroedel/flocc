@@ -409,6 +409,18 @@ static void print_results_default(std::string arg, file_list &fl)
 	std::cout << std::setw(12) << whitespace << std::endl;
 }
 
+static void print_results_json(std::string arg, file_list &fl, std::ofstream &os)
+{
+	file_entry root;
+
+	// Build File-Tree
+	for (auto &fr : fl)
+		insert_file_result(&root, fr);
+
+	// Write Json Data
+	root.jsonize(os);
+}
+
 static void usage(void)
 {
 	std::cout << "floc [options] [arguments...]" << std::endl;
@@ -416,6 +428,7 @@ static void usage(void)
 	std::cout << "  --help, -h         Print this help message" << std::endl;
 	std::cout << "  --repo, -r <repo>  Path to git-repository to use, implies --git" << std::endl;
 	std::cout << "  --git, -g          Run in git-mode, arguments are interpreted as" << std::endl;
+	std::cout << "  --json <file>      Write detailed statistics to <file> in JSON format" << std::endl;
 	std::cout << "  --dump-unknown     Dump counts of unknown file extensions" << std::endl;
 	std::cout << "                     git-revisions instead of filesystem paths" << std::endl;
 }
@@ -424,6 +437,7 @@ enum {
 	OPTION_HELP,
 	OPTION_REPO,
 	OPTION_GIT,
+	OPTION_JSON,
 	OPTION_DUMP_UNKNOWN,
 };
 
@@ -431,15 +445,19 @@ static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
 	{ "repo",		required_argument,	0, OPTION_REPO           },
 	{ "git",		no_argument,		0, OPTION_GIT            },
+	{ "json",		required_argument,	0, OPTION_JSON           },
 	{ "dump-unknown",	no_argument,		0, OPTION_DUMP_UNKNOWN   },
 };
 
 int main(int argc, char **argv)
 {
+	const char *json_file = nullptr;
 	std::vector<std::string> args;
 	bool dump_unknown = false;
 	const char *repo = ".";
 	bool use_git = false;
+	std::ofstream json;
+	bool first = true;
 
 	while (true) {
 		int c, optidx;
@@ -459,6 +477,9 @@ int main(int argc, char **argv)
 		case OPTION_GIT:
 		case 'g':
 			use_git = true;
+			break;
+		case OPTION_JSON:
+			json_file = optarg;
 			break;
 		case OPTION_DUMP_UNKNOWN:
 			dump_unknown = true;
@@ -480,6 +501,17 @@ int main(int argc, char **argv)
 			args.emplace_back(std::string("."));
 	}
 
+	if (json_file != nullptr) {
+		json.open(json_file);
+		if (!json.is_open()) {
+			std::cerr << "Can't open json file for writing " << json_file << std::endl;
+			return 1;
+		}
+	}
+
+	if (json_file != nullptr)
+		json << "[";
+
 	for (auto &a : args) {
 		file_list fl;
 
@@ -496,8 +528,18 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		print_results_default(a, fl);
+		if (json_file == nullptr) {
+			print_results_default(a, fl);
+		} else {
+			if (!first)
+				json << ",";
+			first = false;
+			print_results_json(a, fl, json);
+		}
 	}
+
+	if (json_file != nullptr)
+		json << "]";
 
 	if (dump_unknown)
 		dump_unknown_exts();
