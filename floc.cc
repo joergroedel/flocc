@@ -155,7 +155,7 @@ static std::string hash_buffer(const char *buffer, size_t size)
 	return std::string(str);
 }
 
-static void fs_count_one(struct file_result &r,
+static bool fs_count_one(struct file_result &r,
 			 const fs::directory_entry &p,
 			 std::map<std::string, bool> &seen,
 			 file_buffer &fb)
@@ -163,11 +163,14 @@ static void fs_count_one(struct file_result &r,
 	const auto &path = p.path();
 
 	if (!fs::is_regular_file(p))
-		return;
+		return false;
 
 	auto type    = classifile(path);
 	auto handler = get_file_handler(type);
 	auto size    = fs::file_size(path);
+
+	if (type == file_type::ignore)
+		return false;
 
 	r.type = type;
 
@@ -184,6 +187,8 @@ static void fs_count_one(struct file_result &r,
 
 		handler(r, fb.buffer, size);
 	}
+
+	return true;
 }
 
 static bool ignore_entry(const fs::directory_entry &e)
@@ -206,8 +211,8 @@ static void fs_counter(file_list &fl, const char *path)
 	if (fs::is_regular_file(input)) {
 		fs::directory_entry entry(input);
 		file_result fr(input.string());
-		fs_count_one(fr, entry, seen, fb);
-		fl.emplace_back(std::move(fr));
+		if (fs_count_one(fr, entry, seen, fb))
+			fl.emplace_back(std::move(fr));
 	} else if (fs::is_directory(input)) {
 		std::string::size_type base_len;
 		std::string base_path = path;
@@ -222,8 +227,8 @@ static void fs_counter(file_list &fl, const char *path)
 				continue;
 
 			file_result fr(p.path().string().substr(base_len));
-			fs_count_one(fr, p, seen, fb);
-			fl.emplace_back(std::move(fr));
+			if (fs_count_one(fr, p, seen, fb))
+				fl.emplace_back(std::move(fr));
 		}
 	} else {
 		throw fs::filesystem_error("File type not supported", input, std::error_code());
@@ -258,6 +263,9 @@ static int git_tree_walker(const char *root, const git_tree_entry *entry, void *
 
 	auto type    = classifile(fname);
 	auto handler = get_file_handler(type);
+
+	if (type == file_type::ignore)
+		return 0;
 
 	fr.type = type;
 

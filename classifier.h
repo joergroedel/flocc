@@ -4,6 +4,7 @@
 #include <string>
 
 enum class file_type {
+	ignore,
 	directory,
 	unknown,
 	c,

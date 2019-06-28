@@ -113,6 +113,7 @@ file_type classifile(std::string path)
 const char *get_file_type_cstr(file_type t)
 {
 	switch (t) {
+	case file_type::ignore:		return "Ignore";
 	case file_type::directory:	return "Directory";
 	case file_type::unknown:	return "Unknown";
 	case file_type::c:		return "C";
