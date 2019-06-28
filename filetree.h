@@ -11,6 +11,7 @@ struct loc_result {
 	uint32_t code;
 	uint32_t comment;
 	uint32_t whitespace;
+	uint32_t files;
 
 	loc_result();
 	loc_result& operator+=(const loc_result&);

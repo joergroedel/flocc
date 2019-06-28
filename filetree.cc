@@ -8,7 +8,7 @@
 namespace fs = std::experimental::filesystem;
 
 loc_result::loc_result()
-	: code(0), comment(0), whitespace(0)
+	: code(0), comment(0), whitespace(0), files(0)
 {
 }
 
@@ -17,6 +17,7 @@ loc_result &loc_result::operator+=(const loc_result &r)
 	code       += r.code;
 	comment    += r.comment;
 	whitespace += r.whitespace;
+	files      += r.files;
 
 	return *this;
 }
@@ -67,6 +68,7 @@ void file_entry::jsonize(std::ostream& os)
 		first = false;
 		os << "{";
 		os << "\"Type\":\"" << get_file_type_cstr(pr.first) << "\",";
+		os << "\"Files\":" << pr.second.files << ",";
 		os << "\"Code\":" << pr.second.code << ",";
 		os << "\"Comment\":" << pr.second.comment << ",";
 		os << "\"Blank\":" << pr.second.whitespace;
@@ -102,6 +104,7 @@ void insert_file_result(file_entry *root, const struct file_result &r)
 	result.code       = r.code;
 	result.comment    = r.comment;
 	result.whitespace = r.whitespace;
+	result.files      = 1;
 	root->add_results(r.type, result);
 
 	for (auto &de : ppath) {
