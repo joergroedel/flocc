@@ -102,6 +102,7 @@ void insert_file_result(file_entry *root, const struct file_result &r)
 	result.code       = r.code;
 	result.comment    = r.comment;
 	result.whitespace = r.whitespace;
+	root->add_results(r.type, result);
 
 	for (auto &de : ppath) {
 		entry = entry->get_entry(de, file_type::directory);
