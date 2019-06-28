@@ -218,7 +218,7 @@ static void fs_counter(file_list &fl, const char *path)
 		base_len = base_path.length();
 
 		for (auto &p : fs::recursive_directory_iterator(path)) {
-			if (ignore_entry(p))
+			if (ignore_entry(p) || !fs::is_regular_file(p))
 				continue;
 
 			file_result fr(p.path().string().substr(base_len));
