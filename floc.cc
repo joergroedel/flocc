@@ -9,6 +9,7 @@
 #include <fstream>
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -28,6 +29,11 @@ struct type_result {
 	uint32_t comment = 0;
 	uint32_t whitespace = 0;
 	uint32_t files = 0;
+};
+
+struct timing {
+	uint64_t start;
+	uint64_t stop;
 };
 
 struct file_buffer {
@@ -52,6 +58,29 @@ struct file_buffer {
 
 using file_handler = std::function<void(struct file_result &r, const char *buffer, size_t size)>;
 using file_list    = std::list<file_result>;
+
+static uint64_t timeval(void)
+{
+	struct timeval tv;
+	uint64_t val;
+
+	gettimeofday(&tv, NULL);
+
+	val  = tv.tv_sec * 1000;
+	val += tv.tv_usec / 1000;
+
+	return val;
+}
+
+static void record_start(struct timing &t)
+{
+	t.start = timeval();
+}
+
+static void record_stop(struct timing &t)
+{
+	t.stop = timeval();
+}
 
 /*
  * Use static variants for strlen and strncmp for performance reasons.
@@ -357,10 +386,37 @@ out:
 	git_libgit2_shutdown();
 }
 
-static void print_results_default(std::string arg, file_list &fl)
+static void print_timing(std::ostream &os, uint64_t t,
+			 uint32_t files, uint32_t lines)
+{
+	uint64_t files_per_msec;
+	uint64_t lines_per_msec;
+
+	files_per_msec = ((uint64_t)files * 10000) / t;
+//	files_per_msec = files_per_msec / 1000;
+
+	lines_per_msec = ((uint64_t)lines * 10000) / t;
+//	lines_per_msec = lines_per_msec / 1000;
+
+	os << "  T=";
+	os << t / 1000 << '.';
+	os << std::setw(3) << std::setfill('0') << t % 1000 << 's';
+	os << std::setw(0) << std::setfill(' ');
+
+	os << " (" << files_per_msec / 10 << '.';
+	os << files_per_msec % 10 << " files/s";
+
+	os << ",  " << lines_per_msec / 10 << '.';
+	os << lines_per_msec % 10 << " lines/s";
+
+	os << ')' << std::endl;
+}
+
+static void print_results_default(std::string arg, file_list &fl, struct timing timing)
 {
 	uint32_t code = 0, comment = 0, whitespace = 0, files = 0, unique_files = 0;
 	std::map<std::string, type_result> results;
+	uint64_t t = timing.stop - timing.start;
 
 	for (auto &fr : fl) {
 		if (fr.type == file_type::unknown)
@@ -387,6 +443,8 @@ static void print_results_default(std::string arg, file_list &fl)
 
 	std::cout << "Results for " << arg << ":" << std::endl;
 	std::cout << "  Scanned " << unique_files << " unique files (" << files << " total)" << std::endl;
+
+	print_timing(std::cout, t, unique_files, code + comment + whitespace);
 
 	std::cout << std::left;
 	std::cout << std::setw(20) << " ";
@@ -521,13 +579,16 @@ int main(int argc, char **argv)
 		json << "[";
 
 	for (auto &a : args) {
+		struct timing timing;
 		file_list fl;
 
 		try {
+			record_start(timing);
 			if (use_git)
 				git_counter(fl, repo, a.c_str());
 			else
 				fs_counter(fl, a.c_str());
+			record_stop(timing);
 		} catch (const fs::filesystem_error& f) {
 			std::cerr << "Can not access path " << f.path1() << std::endl;
 			continue;
@@ -537,7 +598,7 @@ int main(int argc, char **argv)
 		}
 
 		if (json_file == nullptr) {
-			print_results_default(a, fl);
+			print_results_default(a, fl, timing);
 		} else {
 			if (!first)
 				json << ",";
