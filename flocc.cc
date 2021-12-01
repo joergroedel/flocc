@@ -30,6 +30,8 @@
 #include "filetree.h"
 #include "md4.h"
 
+#include "version.h"
+
 namespace fs = std::experimental::filesystem;
 
 struct type_result {
@@ -510,7 +512,7 @@ static void usage(void)
 
 static void version(void)
 {
-	std::cout << "Fast Lines Of Code Counter (flocc) version 0.0" << std::endl;
+	std::cout << "Fast Lines Of Code Counter (flocc) version " << FLOCC_VERSION << std::endl;
 	std::cout << "Licensed under the GNU General Public License, version 2 or later" << std::endl;
 	std::cout << "Copyright (c) 2021 SUSE" << std::endl;
 }

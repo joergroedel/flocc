@@ -1,4 +1,6 @@
 flocc
+flocc.1
+version.h
 *~
 *.swp
 *.o
