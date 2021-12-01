@@ -1,0 +1,72 @@
+=head1 NAME
+
+flocc - The Fast Lines Of Code Counter
+
+=head1 SYNOPSIS
+
+flocc [OPTIONS] [DIRECTORY]
+
+=head1 DESCRIPTION
+
+The Fast Lines of Code Counter (flocc) scans a directory tree with source files
+and counts the lines of code, comments, and blank lines.  After scanning it
+prints a summary of counts split by programming or markup languages if found.
+Flocc detects the type of the source files by the file extension.
+
+The directory tree can reside on a file-system or as a git tree-object.
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+=item --help
+
+List available options with a short description for each one and exit.
+
+=item --version
+
+Print version and copyright information and exit.
+
+=item -g
+
+=item --git
+
+Switch to git mode and traverse the directory tree from a git object.  With
+--git the [DIRECTORY] specified must point to a git revsion. The revision does
+not need to be checked out in the working tree.
+
+=item -r <repo>
+
+=item --repo <repo>
+
+Point <repo> to the file-system path with the git repository to use.
+This is only useful with --git.
+
+=item --json <file>
+
+Store detailed numbers in JSON format to <file>. This will store detailed
+numbers and the detected language type for every scanned file as JSON data.
+
+=item --dump-unknown
+
+Print information about unknown file extensions found. This is mostly
+useful for development and testing of flocc.
+
+=back
+
+=head1 AUTHOR
+
+Written by Joerg Roedel
+
+=head1 REPORTING BUGS
+
+Please report bugs directly to L<jroedel@suse.de>
+
+=head1 COPYRIGHT
+
+Copyright 2021 SUSE
+
+License: GPL-2.0+ L<https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt>
+
