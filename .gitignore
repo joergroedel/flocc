@@ -4,3 +4,4 @@ version.h
 *~
 *.swp
 *.o
+*.d
