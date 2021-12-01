@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Fast Lines of Code Counter
+ *
+ * Copyright (C) 2021 SUSE
+ *
+ * Author: Jörg Rödel <jroedel@suse.de>
+ */
 #include <experimental/filesystem>
 #include <functional>
 #include <iostream>

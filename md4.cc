@@ -1,8 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * This software is licensed under the terms of the
- * GNU General Public License Version 2 (no later version)
+ * Fast Lines of Code Counter
+ *
+ * Copyright (C) 2021 SUSE
+ *
+ * Author: Jörg Rödel <jroedel@suse.de>
  */
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
