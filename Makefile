@@ -4,28 +4,34 @@ CXX=g++
 CXXFLAGS=-Wall -O3 -std=c++11 -flto
 TARGET=flocc
 MANPAGE=$(TARGET).1
+INSTALL_DIR ?= /usr/local/
+BIN_DIR     ?= $(INSTALL_DIR)/bin/
+MAN_DIR     ?= $(INSTALL_DIR)/man/
 RELEASE=0.0
 
-all: $(TARGET) $(MANPAGE)
+all: $(DEPS) $(TARGET) $(MANPAGE)
+
+version.h: Makefile
+	./gen-version-h.sh $(RELEASE)
 
 -include $(DEPS)
 
-version.h:
-	./gen-version-h.sh $(RELEASE)
-
-$(TARGET): $(OBJS) version.h
+$(TARGET): $(OBJS)
 	$(CXX) -flto -o $@ $+ -lstdc++fs -lgit2
 
-%.d: %.cc
+%.d: %.cc version.h
 	g++ -MM -c $(CXXFLAGS) $< > $@
 
 $(MANPAGE): flocc.pod
 	pod2man -c "Development Tools" -n $(TARGET) -r "$(TARGET) version $(RELEASE)" $+ > $@
 
 install: $(TARGET)
-	cp $(TARGET) ~/bin/
+	install -m 755 $(TARGET) $(BIN_DIR)
+	install -m 644 $(MANPAGE) $(MAN_DIR)/man1/
+
+userinstall:
+	install -m 755 $(TARGET) ~/bin/
 
 clean:
 	rm -f $(TARGET) $(OBJS) $(MANPAGE) $(DEPS)
 
-.PHONY: version.h clean
