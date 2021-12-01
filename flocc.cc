@@ -492,6 +492,7 @@ static void usage(void)
 	std::cout << "flocc [options] [arguments...]" << std::endl;
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help, -h         Print this help message" << std::endl;
+	std::cout << "  --version          Print version information and exit" << std::endl;
 	std::cout << "  --repo, -r <repo>  Path to git-repository to use, implies --git" << std::endl;
 	std::cout << "  --git, -g          Run in git-mode, arguments are interpreted as" << std::endl;
 	std::cout << "                     git-revisions instead of filesystem paths" << std::endl;
@@ -499,8 +500,16 @@ static void usage(void)
 	std::cout << "  --dump-unknown     Dump counts of unknown file extensions" << std::endl;
 }
 
+static void version(void)
+{
+	std::cout << "Fast Lines Of Code Counter (flocc) version 0.0" << std::endl;
+	std::cout << "Licensed under the GNU General Public License, version 2 or later" << std::endl;
+	std::cout << "Copyright (c) 2021 SUSE" << std::endl;
+}
+
 enum {
 	OPTION_HELP,
+	OPTION_VERSION,
 	OPTION_REPO,
 	OPTION_GIT,
 	OPTION_JSON,
@@ -509,6 +518,7 @@ enum {
 
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
+	{ "version",		no_argument,		0, OPTION_VERSION        },
 	{ "repo",		required_argument,	0, OPTION_REPO           },
 	{ "git",		no_argument,		0, OPTION_GIT            },
 	{ "json",		required_argument,	0, OPTION_JSON           },
@@ -536,6 +546,9 @@ int main(int argc, char **argv)
 		case OPTION_HELP:
 		case 'h':
 			usage();
+			return 0;
+		case OPTION_VERSION:
+			version();
 			return 0;
 		case OPTION_REPO:
 			repo = optarg;
