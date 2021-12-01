@@ -489,7 +489,7 @@ static void print_results_json(std::string arg, file_list &fl, std::ofstream &os
 
 static void usage(void)
 {
-	std::cout << "floc [options] [arguments...]" << std::endl;
+	std::cout << "flocc [options] [arguments...]" << std::endl;
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help, -h         Print this help message" << std::endl;
 	std::cout << "  --repo, -r <repo>  Path to git-repository to use, implies --git" << std::endl;
