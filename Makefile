@@ -7,7 +7,7 @@ MANPAGE=$(TARGET).1
 INSTALL_DIR ?= /usr/local/
 BIN_DIR     ?= $(INSTALL_DIR)/bin/
 MAN_DIR     ?= $(INSTALL_DIR)/man/
-RELEASE=0.0
+RELEASE=0.1
 
 all: $(DEPS) $(TARGET) $(MANPAGE)
 
