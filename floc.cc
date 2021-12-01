@@ -494,9 +494,9 @@ static void usage(void)
 	std::cout << "  --help, -h         Print this help message" << std::endl;
 	std::cout << "  --repo, -r <repo>  Path to git-repository to use, implies --git" << std::endl;
 	std::cout << "  --git, -g          Run in git-mode, arguments are interpreted as" << std::endl;
+	std::cout << "                     git-revisions instead of filesystem paths" << std::endl;
 	std::cout << "  --json <file>      Write detailed statistics to <file> in JSON format" << std::endl;
 	std::cout << "  --dump-unknown     Dump counts of unknown file extensions" << std::endl;
-	std::cout << "                     git-revisions instead of filesystem paths" << std::endl;
 }
 
 enum {
